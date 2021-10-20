@@ -1,0 +1,8 @@
+testlog*/
+data/
+*.tsv
+*.txt
+.idea/
+.vscode/
+.DS_Store
+payRepair交接.md
