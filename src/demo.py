@@ -1,7 +1,8 @@
 import json
-from os import remove
+import os
 import xml.etree.ElementTree as et
 import xml.dom.minidom as md
+
 
 PREP = 'prep'
 INDEX = 'index'
@@ -17,16 +18,22 @@ transfer = {
     'description': {PREP: 'content-desc', INDEX: None, OP: lambda x, y: x == y}
 }
 
-path = '/Users/pkun/PycharmProjects/ui_api_automated_test/testlog_oldVersion-base118/36663/1614759354_result_test_1receipts_214257.json'
+res = []
 
-
-def json_file_process():
+def json_file_process(path):
     result_json = open(path)
     data = json.loads(result_json.read())['case_data']
     for test_action in data:
         if 'selector' in test_action:
-            case_data_process(data)
+            test_action_process(test_action)
 
+def test_action_process(test_action):
+    try:
+        matched_node, other_nodes = find_match_node_with_selector(test_action['selector'], et.fromstring(test_action['xml']))
+    except RuntimeError:
+        return 
+    ret = get_positive_and_negative_example(test_action['trace'], matched_node, other_nodes, test_action['xml'], -2)
+    res.append(ret)
 
 def get_all_nodes(root, ns: list):
     for child in root:
@@ -38,9 +45,16 @@ def remove_and_return(nodes, node):
     nodes.remove(node)
     return node, nodes
 
+def get_all_nodes_key(ns):
+    ret = []
+    for i in ns:
+        ret.append(i.attrib)
+    return ret
 
 def find_match_node_with_selector(selector, xml):
-    nodes = get_all_nodes(xml)
+    nodes = []
+    get_all_nodes(xml, nodes)
+    nodes = get_all_nodes_key(nodes)
     keys = selector.keys()
     for node in nodes:
         if len(keys) > 2:
@@ -55,14 +69,35 @@ def find_match_node_with_selector(selector, xml):
                     if INSTANCE not in keys:
                         return remove_and_return(nodes, node)
                     else:
-                        if selector[INSTANCE] == node[transfer[attr][INDEX]]:
-                            return remove_and_return(nodes, node)
+                        try:
+                            if selector[INSTANCE] == node[transfer[attr][INDEX]]:
+                                return remove_and_return(nodes, node)
+                        except KeyError:
+                            print(selector, node)
         if len(keys) == 1:
             selector_attrs_ = selector_attrs + ['description']
             for attr in selector_attrs_:
                 if attr in keys and transfer[attr][OP](selector[attr], node[transfer[attr][PREP]]):
                     return remove_and_return(nodes, node)
+    raise RuntimeError('cannot match')
 
+def get_positive_and_negative_example(trace, matched_node, other_nodes, xml, trace_index):
+    positive_doc = get_doc_by_node(matched_node, is_negative=False).replace('\t',' ')
+
+    query = trace.split('\n')[trace_index].split(" ")[0].replace('_',' ')
+
+    negative_docs = []
+    for node in other_nodes:
+        negative_doc = get_doc_by_node(node, is_negative=True)
+        if not negative_doc is None:
+            negative_docs.append(negative_doc.replace('\t', " ").replace("\n", " "))
+    ret = {
+        'query': query.replace('_', ' '),
+        'positive_doc': positive_doc.replace('\t', ' '),
+        'negative_docs': negative_docs,
+        'xml': xml
+    }
+    return ret
 
 def get_doc_by_node(matched_node, is_negative):
     if matched_node['text'] != '':
@@ -74,31 +109,7 @@ def get_doc_by_node(matched_node, is_negative):
     if matched_node['class']!='' and not is_negative:
         return matched_node['class']
     return None 
-        
 
-def case_data_process(data):
-    selector, xml = None, None
-    selectors = []
-
-    for _ in selectors:
-        print(_)
-
-    for test_action in data:
-        if 'selector' in test_action:
-            selector = test_action['selector']
-            xml = test_action['xml']
-            break
-
-    root = et.fromstring(xml)
-    print(selector.keys())
-    if 'text' in selector.keys():
-        print(1)
-    for child in root:
-        print(child.tag, child.attrib)
-    nodes = set()
-    keys = selector.keys()
-
-    care_keys = ['instance', 'rid', 'text', 'class', 'description', 'contains']
 
 
 if __name__ == '__main__':
@@ -114,14 +125,32 @@ if __name__ == '__main__':
     # get_all_nodes(root, nodes)
     # keys = selector.keys()
     # print(len(keys))
-    a = {
-        'a': lambda x, y: x == y,
-        'b': lambda x, y: x in y
-    }
-    val1 = a['a'](1, 1)
-    val2 = a['a'](1, 2)
-    val3 = a['b'](2, [1, 2, 3])
-    val4 = a['b'](2, [3, 4, 5])
-    print(val1, val2, val3, val4)
-    if a['b'](2, [1, 2, 3]):
-        print(1)
+    # for i in nodes:
+    #     print(i.attrib)
+    # path = '/Users/pkun/PycharmProjects/ui_api_automated_test/testlog_oldVersion-base118/36663/1614759354_result_test_1receipts_214257.json'
+    # json_file_process(path)
+    # demo = open('demo.txt', 'w')
+    # for train in res:
+    #     if train['query'] == 'init' or train['query'] == 'login' or train['query'] == 'system requests from direct business':
+    #         continue
+    #     label = 'yes'
+    #     doc = train['query']
+    #     ans = train['positive_doc'].replace('\n','')
+    #     demo.write(label + '\t' + doc + '\t' + ans)
+    # demo.close()
+    # print(os.system('pwd'))
+    pwd = os.getcwd() + '/testlog_oldVersion-base118'
+    for _, __, files in os.walk(pwd):
+        for file in files:
+            if file.endswith('.json') and 'result' in file:
+                f = open(file, 'r')
+                s = json.load(f)
+                f.close()
+                s = json.dumps(s, ensure_ascii=False, indent=4, sort_keys=True) 
+                f = open(file, 'w')
+                f.write(s)
+    # s = json.load(f)
+    # pretty_json = open('pretty.json', 'w')
+    # p = json.dumps(s, ensure_ascii=False, indent=4, sort_keys=True)
+    # pretty_json.write(p)
+    # pretty_json.close()
