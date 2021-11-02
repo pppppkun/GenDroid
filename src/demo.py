@@ -2,6 +2,7 @@ import json
 import os
 import xml.etree.ElementTree as et
 import xml.dom.minidom as md
+import numpy as np
 
 
 PREP = 'prep'
@@ -110,9 +111,45 @@ def get_doc_by_node(matched_node, is_negative):
         return matched_node['class']
     return None 
 
+def see_predict():
+    predict = open(os.path.join('data','predict.txt'), 'r')
+    s = predict.read()
+    l = s.split('\n')
+    t = dict() 
+    f = dict()
+    ld = dict()
+    index = 0
+    j = 0
+    while index < len(l):
+        batch = l[index:index+4]
+        text_a = batch[0][8:]
+        text_b = batch[1][8:]
+        label = batch[2][6:]
+        prediction = batch[3][11:]
 
+        index_ = prediction.find(' ')
+        prediction = prediction[:index_] + ',' + prediction[index_:]
+        prediction = eval(prediction)
+        prediction = 'yes' if prediction[0] > prediction[1] else 'no'
+        ld['text_a'] = text_a
+        ld['text_b'] = text_b
+        ld['label'] = label
+        ld['prediction'] = prediction
+        if prediction == label:
+            t[j] = ld.copy()
+        else:
+            f[j] = ld.copy()
+        j += 1
+        index = index + 5
+    predict_true = open(os.path.join('data', 'predict_true.json'), 'w')
+    predict_false = open(os.path.join('data', 'predict_false.json'), 'w')
+    predict = open(os.path.join('data', 'predict.json'), 'w')
+    json.dump(t, predict_true, ensure_ascii=False)
+    json.dump(f, predict_false, ensure_ascii=False)
+    json.dump({**t, **f}, predict, ensure_ascii=False, sort_keys=True)
 
 if __name__ == '__main__':
+    # see_predict()
     # result_json = open(path)
     # data = json.loads(result_json.read())['case_data']
     # for test_action in data:
@@ -139,18 +176,14 @@ if __name__ == '__main__':
     #     demo.write(label + '\t' + doc + '\t' + ans)
     # demo.close()
     # print(os.system('pwd'))
-    pwd = os.getcwd() + '/testlog_oldVersion-base118'
-    for _, __, files in os.walk(pwd):
+    pwd = os.getcwd() + '/testlog_NewVersion-basejsapi-7-copy'
+    for path, __, files in os.walk(pwd):
         for file in files:
             if file.endswith('.json') and 'result' in file:
-                f = open(file, 'r')
+                f = open(os.path.join(path, file), 'r')
                 s = json.load(f)
                 f.close()
                 s = json.dumps(s, ensure_ascii=False, indent=4, sort_keys=True) 
-                f = open(file, 'w')
+                f = open(os.path.join(path, file), 'w')
                 f.write(s)
-    # s = json.load(f)
-    # pretty_json = open('pretty.json', 'w')
-    # p = json.dumps(s, ensure_ascii=False, indent=4, sort_keys=True)
-    # pretty_json.write(p)
-    # pretty_json.close()
+    pass

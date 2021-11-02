@@ -1,5 +1,5 @@
 testlog*/
-data/
+*data/
 *.tsv
 *.txt
 .idea/
