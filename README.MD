@@ -1,29 +1,14 @@
-### 部分函数逻辑记录
+### note
 
-```python
-def findMatchedNodeWithSelector(selector, xml)
-```
-参数解释：selector是一个UI元素选择器，是个字典，其中含有的keys可能有
-- instance, 表示id
-- rid，表示resource-id
-- text，表示text
-- contains，也表示text
-当text或者contains都在keys里时，instance表示的时textIndex
-- class，表示ui的class，这个时候instance表示的是classIndex
-- description，表示content-desc
-xml就是uiautomator爬出来的xml文件，这个文件里包含了所有node的信息
-这个函数会把xml中match了selector的node全都取出来
-**重写进度：30%**
+对predict_false中第三个错误的分析，text_a是"enter the payment password again and submit the payment password and verify that the payment password is legal"
+text_b是"confirm"
 
-```python
-def getPositiveAndNegativeExample(handle, nodeMatchedWithSelector,notMatchedNodes, xml)
-```
-参数解释：handle，就是每次action的trace
+这条数据对应的是newlog/2477/"1620973324**323285"里的用例，bert认为这两个不是前后句关系，图片是1620973936999和1620973914780
 
+值得一提的是，不仅第三个错误是这样的，第26个错误也是这样的，他们都有"enter the payment password again to set the payment password and verify that the payment password is [legal/illegal]"
+对应的元素的text都是完成。
+在师兄的模型里，这两条信息也都是错误，但是错误的差距很小，最后出来的结果是[0.48,0.52]之间，所以选择了no，在我自己的模型里，这两个数据的都几乎是压倒性的认为是错误的，这让我有点无法理解[e-06, e-01]，进一步观察发现我这里大部分数据选择NO都有压倒性的优势
 
-
-```python
-def getDocByNode(nodeMatchedWithSelector, isNegative)
-```
-如果isNegative是False，表示获取MatchedNode里面的信息，这个时候是比较sound的，能多获取就多获取，如果是True，表示是notMatchedNode，不获取太多信息
-相比较之下，可能多获取的信息就是rid和class
+考虑原因一：
+- 训练数据中没有任何可以体现这俩关系的句子
+    - 这里同样的句子在训练集中也出现了，答案是Finish，另一个的答案是Confirm，这里是否是存在着翻译上的问题？

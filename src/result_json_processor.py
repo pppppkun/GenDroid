@@ -19,22 +19,25 @@ transfer = {
     'description': {PREP: 'content-desc', INDEX: None, OP: lambda x, y: x == y}
 }
 
-res = []
 
 def json_file_process(path):
+    res = []
     result_json = open(path)
     data = json.loads(result_json.read())['case_data']
     for test_action in data:
         if 'selector' in test_action:
-            test_action_process(test_action)
+            ret = test_action_process(test_action)
+            if ret is not None:
+                res.append(ret)
+    return res
 
 def test_action_process(test_action):
     try:
         matched_node, other_nodes = find_match_node_with_selector(test_action['selector'], et.fromstring(test_action['xml']))
     except RuntimeError:
         return 
-    ret = get_positive_and_negative_example(test_action['trace'], matched_node, other_nodes, test_action['xml'], -2)
-    res.append(ret)
+    ret = get_positive_and_negative_example(test_action['trace'], matched_node, other_nodes, test_action['xml'], -6)
+    return ret
 
 def get_all_nodes(root, ns: list):
     for child in root:
@@ -74,7 +77,8 @@ def find_match_node_with_selector(selector, xml):
                             if selector[INSTANCE] == node[transfer[attr][INDEX]]:
                                 return remove_and_return(nodes, node)
                         except KeyError:
-                            print(selector, node)
+                            # print(selector, node)
+                            pass
         if len(keys) == 1:
             selector_attrs_ = selector_attrs + ['description']
             for attr in selector_attrs_:
