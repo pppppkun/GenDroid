@@ -20,22 +20,23 @@ transfer = {
 }
 
 
-def json_file_process(path):
+def json_file_process(path, is_train_set):
     res = []
     result_json = open(path)
     data = json.loads(result_json.read())['case_data']
     for test_action in data:
         if 'selector' in test_action:
-            ret = test_action_process(test_action)
+            ret = test_action_process(test_action, is_train_set)
             if ret is not None:
                 res.append(ret)
     return res
 
-def test_action_process(test_action):
+def test_action_process(test_action, is_train_set):
     try:
         matched_node, other_nodes = find_match_node_with_selector(test_action['selector'], et.fromstring(test_action['xml']))
     except RuntimeError:
         return 
+    index = -6 if is_train_set else -2
     ret = get_positive_and_negative_example(test_action['trace'], matched_node, other_nodes, test_action['xml'], -6)
     return ret
 
