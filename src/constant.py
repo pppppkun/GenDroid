@@ -1,7 +1,7 @@
 import os
 
 DATA = 'data'
-
+INPUT = os.path.join(DATA, 'input.tsv')
 PREDICT_FALSE = os.path.join(DATA, 'predict_false.json')
 PREDICT_TRUE = os.path.join(DATA, 'predict_true.json')
 PREDICT = os.path.join(DATA, 'predict.json')
