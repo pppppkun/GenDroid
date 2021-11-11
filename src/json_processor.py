@@ -2,6 +2,8 @@ from abc import abstractmethod
 import json
 import os
 import xml.etree.ElementTree as et
+from common import files
+from constant import NEW_LOG, OLD_LOG
 
 PREP = 'prep'
 INDEX = 'index'
@@ -17,6 +19,7 @@ transfer = {
     'description': {PREP: 'content-desc', INDEX: None, OP: lambda x, y: x == y}
 }
 
+
 def get_all_nodes(root, ns: list):
     for child in root:
         ns.append(child)
@@ -26,6 +29,7 @@ def get_all_nodes(root, ns: list):
 def remove_and_return(nodes, node):
     nodes.remove(node)
     return node, nodes
+
 
 def get_all_nodes_key(ns):
     ret = []
@@ -39,7 +43,6 @@ class JsonSearch:
         self.path = path
         self.is_train_set = is_train_set
 
-
     def json_file_process(self):
         res = []
         result_json = open(self.path)
@@ -50,15 +53,17 @@ class JsonSearch:
                 if ret is not None:
                     res.append(ret)
         return res
-    
+
     def test_action_process(self, test_action):
         try:
-            matched_node, other_nodes = self.find_match_node_with_selector(test_action['selector'], et.fromstring(test_action['xml']))
+            matched_node, other_nodes = self.find_match_node_with_selector(
+                test_action['selector'], et.fromstring(test_action['xml']))
         except RuntimeError:
-            return 
+            return
         # old -2 new -6
         index = -6 if self.is_train_set else -2
-        ret = self.get_positive_and_negative_example(test_action['trace'], matched_node, other_nodes, test_action['xml'], index)
+        ret = self.get_positive_and_negative_example(
+            test_action['trace'], matched_node, other_nodes, test_action['xml'], index)
         return ret
 
     @abstractmethod
@@ -92,20 +97,22 @@ class JsonSearch:
                     if attr in keys and transfer[attr][OP](selector[attr], node[transfer[attr][PREP]]):
                         return remove_and_return(nodes, node)
         raise RuntimeError('cannot match')
-    
+
     @abstractmethod
     def get_doc_by_node(self, matched_node, is_negative):
         pass
 
     def get_positive_and_negative_example(self, trace, matched_node, other_nodes, xml, index):
-        positive_doc = self.get_doc_by_node(matched_node, is_negative=False).replace('\t',' ')
-        query = trace.split('\n')[index].split(" ")[0].replace('_',' ')
+        positive_doc = self.get_doc_by_node(
+            matched_node, is_negative=False).replace('\t', ' ')
+        query = trace.split('\n')[index].split(" ")[0].replace('_', ' ')
 
         negative_docs = []
         for node in other_nodes:
             negative_doc = self.get_doc_by_node(node, is_negative=True)
             if not negative_doc is None:
-                negative_docs.append(negative_doc.replace('\t', " ").replace("\n", " "))
+                negative_docs.append(negative_doc.replace(
+                    '\t', " ").replace("\n", " "))
         ret = {
             'query': query,
             'positive_doc': positive_doc,
@@ -122,20 +129,21 @@ class DataSetBuild(JsonSearch):
     def get_doc_by_node(self, matched_node, is_negative):
         if matched_node['text'] != '':
             return matched_node['text']
-        if matched_node['content-desc']!='':
+        if matched_node['content-desc'] != '':
             return matched_node['content-desc']
-        if matched_node['resource-id']!='' and not is_negative:
+        if matched_node['resource-id'] != '' and not is_negative:
             return matched_node['resource-id']
-        if matched_node['class']!='' and not is_negative:
+        if matched_node['class'] != '' and not is_negative:
             return matched_node['class']
-        return None 
+        return None
+
 
 class CompareBuild(JsonSearch):
     def __init__(self, path, is_train_set) -> None:
-        super().__init__(path, is_train_set)    
-    
+        super().__init__(path, is_train_set)
+
     def get_doc_by_node(self, node, is_negative):
-        res = {} 
+        res = {}
         if node['text'] != '':
             res['text'] = node['text'].replace('\t', ' ')
         if node['content-desc'] != '':
@@ -148,7 +156,7 @@ class CompareBuild(JsonSearch):
 
     def get_positive_and_negative_example(self, trace, matched_node, other_nodes, xml, index):
         positive_doc = self.get_doc_by_node(matched_node, is_negative=False)
-        query = trace.split('\n')[index].split(" ")[0].replace('_',' ')
+        query = trace.split('\n')[index].split(" ")[0].replace('_', ' ')
         negative_docs = []
         for node in other_nodes:
             negative_doc = self.get_doc_by_node(node, is_negative=True)
@@ -162,13 +170,13 @@ class CompareBuild(JsonSearch):
             'negative_docs': negative_docs,
         }
         return ret
-        
+
 
 def see_predict():
-    predict = open(os.path.join('data','predict.txt'), 'r')
+    predict = open(os.path.join('data', 'predict.txt'), 'r')
     s = predict.read()
     l = s.split('\n')
-    t = dict() 
+    t = dict()
     f = dict()
     ld = dict()
     index = 0
@@ -201,6 +209,41 @@ def see_predict():
     json.dump(f, predict_false, ensure_ascii=False)
     json.dump({**t, **f}, predict, ensure_ascii=False, sort_keys=True)
 
+class SingleData:
+    def __init__(self, label, text_a, text_b) -> None:
+        self.label = label
+        self.text_a = text_a
+        self.text_b = text_b
+    def __hash__(self) -> int:
+        return hash(self.label + self.text_a + self.text_b)
+    def __eq__(self, o: object) -> bool:
+        return self.to_text() == o.to_text() 
+    def to_text(self):
+        return self.label + '\t' + self.text_a + '\t' + self.text_b
+    def __str__(self) -> str:
+        return self.to_text()
+    def __repr__(self):
+        return '<Data {}>'.format(self.to_text())
+
+def build_data_set(log):
+    is_new_log = True if log == NEW_LOG else False
+    data_set= set()
+    for path in files(log):
+        dsb = DataSetBuild(path, is_new_log)
+        res = dsb.json_file_process()
+        for example in res:
+            query = example['query']
+            if query == 'init' or query == 'system requests from direct business':
+                continue
+            text_b = example['positive_doc'].replace('\n', ' ')
+            data_set.add(SingleData('yes', query, text_b))
+            for n_c in example['negative_docs']:
+                data_set.add(SingleData('no', query, n_c))
+    return data_set
+
+
 if __name__ == '__main__':
-    pass
-    
+    # train data build
+    new_log_data_set = build_data_set(NEW_LOG)
+    old_log_data_set = build_data_set(OLD_LOG)
+    data_set = new_log_data_set.union(old_log_data_set)

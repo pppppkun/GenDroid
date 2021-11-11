@@ -93,13 +93,13 @@ def compare_from_trace():
 # find the relation between assert_list and case_data and success
 def check_false():
     old_result = json.load(open('data/old_test_log/36591/1614758900_result_test_1receipts_214333.json', 'r')) 
-    new_result = json.load(open('data/new_test_log/2471/1620973177_result_test_1Receipts_323582.json', 'r'))
+    new_result = json.load(open('data/new_test_log/2490/1620974239_result_test_1Receipts_323680.json', 'r'))
     case_doc = new_result['case_doc'] 
+    print(new_result.keys())
     print(case_doc)
     print(new_result['success'])
-    for i in new_result['source']['code']:
-        print(i)
-        
+    print(new_result['errors'])
+     
 if __name__ == '__main__':
     # compare_from_trace()
     check_false()
