@@ -2,38 +2,6 @@ import json
 import os
 from constant import DATA, NEW_LOG, OLD_LOG
 from common import files
-def see_predict():
-    predict = open(os.path.join('data','predict.txt'), 'r')
-    s = predict.read()
-    l = s.split('\n')
-    t = dict() 
-    f = dict()
-    ld = dict()
-    index = 0
-    j = 0
-    while index < len(l):
-        batch = l[index:index+4]
-        text_a = batch[0][8:]
-        text_b = batch[1][8:]
-        label = batch[2][6:]
-        prediction = batch[3][11:]
-        index_ = prediction.find(' ')
-        prediction = prediction[:index_] + ',' + prediction[index_:]
-        prediction = eval(prediction)
-        ld['text_a'] = text_a
-        ld['text_b'] = text_b
-        ld['label'] = label
-        ld['prediction'] = prediction
-        if prediction == label:
-            t[j] = ld.copy()
-        else:
-            f[j] = ld.copy()
-        j += 1
-        index = index + 5
-    all_data = {**t, **f} 
-    pre = open('data/predict1.json', 'w')
-    json.dump(all_data, pre, sort_keys=True, ensure_ascii=False, indent=4)
-
 
 def get_trace(log):
     traces = {}
