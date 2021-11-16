@@ -1,6 +1,6 @@
 import os
 import json
-from constant import INPUT, OLD_LOG, PREDICT_TRUE, PREDICT, PREDICT_FALSE, NEW_LOG
+from constant import DATA, DATA_SET, HYBRID_INPUT, ORIGIN_INPUT, OLD_LOG, PREDICT_TRUE, PREDICT, PREDICT_FALSE, NEW_LOG
 from json_processor import DataSetBuild 
 from common import files
 
@@ -27,14 +27,15 @@ def see_predict(file_path, output_path):
         ld['label'] = label
         ld['prediction'] = prediction
         prediction = 'yes' if prediction[0] > prediction[1] else 'no'
+        ld['prediction'] = prediction
         if prediction == label:
             t[j] = ld.copy()
         else:
             f[j] = ld.copy()
         j += 1
         index = index + 4 
-    # all_data = {**t, **f} 
-    all_data = f
+    all_data = {**t, **f} 
+    # all_data = f
     pre = open(output_path, 'w')
     json.dump(all_data, pre, sort_keys=True, ensure_ascii=False, indent=4)
 
@@ -113,7 +114,59 @@ def get_predict_info_from_file(file_path):
         f.write("\n".join(i))
         f.write('\n')
     f.close()
+
+TP = 'TP'
+TN = 'TN'
+FP = 'FP'
+FN = 'FN'
+
+def compare_label_and_predict(data):
+    if data['prediction'] == 'yes' and data['label'] == 'yes':
+        return TP
+    if data['prediction'] == 'yes' and data['label'] == 'no':
+        return FP
+    if data['prediction'] == 'no' and data['label'] == 'yes':
+        return FN
+    if data['prediction'] == 'no' and data['label'] == 'no':
+        return TN
+
+def calculate_TFPN(data_set):
+    result = {
+        TP: 0,
+        TN: 0,
+        FP: 0,
+        FN: 0
+    }
+    for i in data_set:
+        single_data = data_set[i]
+        result[compare_label_and_predict(single_data)] += 1       
+    return result 
+
+def calculate_recall(data_set):
+    res = calculate_TFPN(data_set)
+    recall = res[TP] / (res[TP] + res[FN])
+    return recall
+
+def calculate_precision(data_set):
+    res = calculate_TFPN(data_set)
+    precision = res[TP] / (res[TP] + res[FP])
+    return precision
+
+def calculate_f1(data_set):
+    recall = calculate_recall(data_set)
+    precision = calculate_precision(data_set)
+    f1 = 2 * recall * precision / (recall + precision)
+    return f1
+
 if __name__ == '__main__':
     # get_predict_info_from_file('data/hybrid-predict.txt')
-    see_predict(os.path.join('data', 'hybrid-predict.txt'), os.path.join('data', 'hybrid-false-predict.json'))
+    # see_predict(os.path.join('data', 'hybrid-predict.txt'), os.path.join('data', 'hybrid-predict-with-predict-label.json'))
+    data_set = json.load(open(os.path.join(DATA, 'hybrid-predict-with-predict-label.json'), 'r'))
+    res = calculate_TFPN(data_set)
+    for i in res:
+        print(i, res[i])
+    f1 = calculate_f1(data_set)
+    recall = calculate_recall(data_set)
+    precision = calculate_precision(data_set)
+    print(f1, recall, precision)
     pass

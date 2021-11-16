@@ -1,7 +1,13 @@
 import json
 import os
-from constant import DATA, NEW_LOG, OLD_LOG
+from constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_INPUT, VERSION_INPUT
 from common import files
+
+HTML_ENTIRY = {
+    '&quot;': '\"',
+    '&#39;':'\''
+}
+
 
 def get_trace(log):
     traces = {}
@@ -67,7 +73,73 @@ def check_false():
     print(case_doc)
     print(new_result['success'])
     print(new_result['errors'])
-     
+
+
+def origin_data_set_to_dict(origin_data_set):
+    result = dict()
+    for i in origin_data_set:
+        if len(i) == 0:
+            continue
+        single_data = i.split('\t')
+        label_and_text = result.setdefault(single_data[1], [])
+        label_and_text.append({'label':single_data[0], 'text':single_data[2]})
+    return result
+
+def get_all_text_b(dict_data_set):
+    result = dict()
+    for key in dict_data_set.keys():
+        s = result.setdefault(key, set())
+        for i in dict_data_set[key]:
+            s.add(i['label'] + ' ' + i['text'])
+    return result 
+
+def compare_data_set(f1, f2):
+    f1_strs = open(f1, 'r').read().split('\n')
+    f2_strs = open(f2, 'r').read().split('\n')
+    dict1 = origin_data_set_to_dict(f1_strs) 
+    f1_text_a_and_text_b_dict = get_all_text_b(dict1)
+    dict2 = origin_data_set_to_dict(f2_strs)
+    f2_text_a_and_text_b_dict = get_all_text_b(dict2)
+    result = dict()
+    f1_keys = set(f1_text_a_and_text_b_dict.keys())
+    f2_keys = set(f2_text_a_and_text_b_dict.keys())
+    same_keys = f1_keys.intersection(f2_keys)
+    for i in same_keys:
+        l1 = set(f1_text_a_and_text_b_dict[i])
+        l2 = set(f2_text_a_and_text_b_dict[i])
+        result[i] = {
+            'only_' + f2: l2.difference(l1),
+            'only_' + f1: l1.difference(l2)
+            # 'same': l1.intersection(l2)
+        }
+    for i in f1_keys.difference(f2_keys):
+        result[i] = {
+            'only_' + f1: f1_text_a_and_text_b_dict[i]
+        }
+    for i in f2_keys.difference(f1_keys):
+        result[i] = {
+            'only_' + f2: f2_text_a_and_text_b_dict[i]
+        }
+    for i in result:
+        for j in result[i]:
+            result[i][j] = sorted(list(result[i][j]))
+    json.dump(result, open('temp.json', 'w'), ensure_ascii=False, indent=4, sort_keys=True)
+
+def translate_html_to_ascii(data_set_path):
+    data_set = open(data_set_path, 'r').read().split('\n')
+    result = []
+    for i in data_set:
+        temp = i
+        for key in HTML_ENTIRY:
+            if key in temp:
+                temp = temp.replace(key, HTML_ENTIRY[key])
+        result.append(temp)
+    f = open('change_data_set.txt', 'w')
+    f.write('\n'.join(result))
+
+
 if __name__ == '__main__':
     # compare_from_trace()
-    check_false()
+    # check_false()
+    translate_html_to_ascii('data/data_set/version_data_set.tsv')
+    compare_data_set('change_data_set.txt', 'data/data_set/origin_data_set.tsv')

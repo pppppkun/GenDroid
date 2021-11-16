@@ -1,7 +1,15 @@
 import os
 
 DATA = 'data'
-INPUT = os.path.join(DATA, 'input.tsv')
+DATA_SET = os.path.join(DATA, 'data_set')
+
+ORIGIN_INPUT = os.path.join(DATA_SET ,'origin_input.tsv')
+ORIGIN_OUTPUT = os.path.join(DATA_SET, 'origin_output.tsv')
+HYBRID_INPUT = os.path.join(DATA_SET, 'hybrid_input.tsv')
+HYBRID_OUTPUT = os.path.join(DATA_SET, 'hybrid_output.tsv')
+VERSION_INPUT = os.path.join(DATA_SET, 'version_input.tsv')
+VERSION_OUTPUT = os.path.join(DATA_SET, 'version_output.tsv')
+
 PREDICT_FALSE = os.path.join(DATA, 'predict_false.json')
 PREDICT_TRUE = os.path.join(DATA, 'predict_true.json')
 PREDICT = os.path.join(DATA, 'predict.json')

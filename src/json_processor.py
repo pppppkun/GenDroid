@@ -225,7 +225,25 @@ class SingleData:
     def __repr__(self):
         return '<Data {}>'.format(self.to_text())
 
-def build_data_set(log):
+class DataContainer:
+    def __init__(self, is_remove_duplicate) -> None:
+        self.is_remove_duplicate = is_remove_duplicate
+        self.container = set() if is_remove_duplicate else list()
+
+    def add(self, data):
+        if self.is_remove_duplicate:
+            self.container.add(data)
+        else:
+            self.container.append(data)   
+
+    def to_set(self):
+        pass
+
+    def to_list(self):
+        pass 
+
+
+def build_data_set(log, is_remove_duplicate=True):
     is_new_log = True if log == NEW_LOG else False
     data_set= set()
     for path in files(log):
