@@ -1,6 +1,6 @@
 import os
 import json
-from constant import DATA, DATA_SET, HYBRID_INPUT, ORIGIN_INPUT, OLD_LOG, PREDICT_TRUE, PREDICT, PREDICT_FALSE, NEW_LOG
+from constant import DATA, DATA_SET, HYBRID_TRAIN, ORIGIN_TRAIN, OLD_LOG, PREDICT_TRUE, PREDICT, PREDICT_FALSE, NEW_LOG
 from json_processor import DataSetBuild 
 from common import files
 

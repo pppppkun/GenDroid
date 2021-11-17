@@ -2,8 +2,9 @@ from abc import abstractmethod
 import json
 import os
 import xml.etree.ElementTree as et
-from common import files
+from common import files, translate_html_entity 
 from constant import NEW_LOG, OLD_LOG
+import pandas as pd
 
 PREP = 'prep'
 INDEX = 'index'
@@ -209,59 +210,40 @@ def see_predict():
     json.dump(f, predict_false, ensure_ascii=False)
     json.dump({**t, **f}, predict, ensure_ascii=False, sort_keys=True)
 
-class SingleData:
-    def __init__(self, label, text_a, text_b) -> None:
-        self.label = label
-        self.text_a = text_a
-        self.text_b = text_b
-    def __hash__(self) -> int:
-        return hash(self.label + self.text_a + self.text_b)
-    def __eq__(self, o: object) -> bool:
-        return self.to_text() == o.to_text() 
-    def to_text(self):
-        return self.label + '\t' + self.text_a + '\t' + self.text_b
-    def __str__(self) -> str:
-        return self.to_text()
-    def __repr__(self):
-        return '<Data {}>'.format(self.to_text())
-
-class DataContainer:
-    def __init__(self, is_remove_duplicate) -> None:
-        self.is_remove_duplicate = is_remove_duplicate
-        self.container = set() if is_remove_duplicate else list()
-
-    def add(self, data):
-        if self.is_remove_duplicate:
-            self.container.add(data)
-        else:
-            self.container.append(data)   
-
-    def to_set(self):
-        pass
-
-    def to_list(self):
-        pass 
 
 
-def build_data_set(log, is_remove_duplicate=True):
+def build_data_set(log):
     is_new_log = True if log == NEW_LOG else False
-    data_set= set()
+    # data_set= DataSet(is_remove_duplicate=is_remove_duplicate)
+    data_set = dict()
+    data_set['label'] = list()
+    data_set['query'] = list()
+    data_set['ui_info'] = list()
     for path in files(log):
         dsb = DataSetBuild(path, is_new_log)
         res = dsb.json_file_process()
         for example in res:
-            query = example['query']
-            if query == 'init' or query == 'system requests from direct business':
+            query = example['query'] 
+            if query == 'init' or query == 'system requests from direct business' or query == 'wrap do repair':
                 continue
-            text_b = example['positive_doc'].replace('\n', ' ')
-            data_set.add(SingleData('yes', query, text_b))
+            text_b = example['positive_doc'].replace('\n', ' ') 
+            data_set['label'].append('yes')
+            data_set['query'].append(query) 
+            data_set['ui_info'].append(text_b)
+            # data_set.add(Data('yes', query, text_b))
             for n_c in example['negative_docs']:
-                data_set.add(SingleData('no', query, n_c))
+                data_set['label'].append('no')
+                data_set['query'].append(query)
+                data_set['ui_info'].append(n_c)
+                # data_set.add(Data('no', query, n_c))
+    data_set = pd.DataFrame(data_set)
     return data_set
 
 
 if __name__ == '__main__':
     # train data build
     new_log_data_set = build_data_set(NEW_LOG)
-    old_log_data_set = build_data_set(OLD_LOG)
-    data_set = new_log_data_set.union(old_log_data_set)
+    # old_log_data_set = build_data_set(OLD_LOG)
+    # data_set = new_log_data_set.union(old_log_data_set)
+    print(new_log_data_set.head())
+    pass

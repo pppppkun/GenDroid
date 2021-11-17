@@ -1,12 +1,9 @@
 import json
 import os
-from constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_INPUT, VERSION_INPUT
+from constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_TRAIN, VERSION_TRAIN, HTML_ENTIRY
 from common import files
 
-HTML_ENTIRY = {
-    '&quot;': '\"',
-    '&#39;':'\''
-}
+
 
 
 def get_trace(log):
@@ -142,4 +139,4 @@ if __name__ == '__main__':
     # compare_from_trace()
     # check_false()
     translate_html_to_ascii('data/data_set/version_data_set.tsv')
-    compare_data_set('change_data_set.txt', 'data/data_set/origin_data_set.tsv')
+    # compare_data_set('change_data_set.txt', 'data/data_set/origin_data_set.tsv')
