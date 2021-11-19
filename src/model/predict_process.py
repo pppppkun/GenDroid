@@ -1,8 +1,10 @@
 import os
 import json
-from constant import DATA, DATA_SET, HYBRID_TRAIN, ORIGIN_TRAIN, OLD_LOG, PREDICT_TRUE, PREDICT, PREDICT_FALSE, NEW_LOG
+from posixpath import join
+from constant import DATA, DATA_SET, EVAL, HYBRID_TRAIN, ORIGIN_TRAIN, OLD_LOG, PREDICT_TRUE, PREDICT, PREDICT_FALSE, NEW_LOG
 from json_processor import DataSetBuild 
 from common import files
+import pandas as pd
 
 def see_predict(file_path, output_path):
     predict = open(file_path, 'r')
@@ -14,6 +16,9 @@ def see_predict(file_path, output_path):
     index = 0
     j = 0
     while index < len(l):
+        if len(l[index]) == 0:
+            index += 1
+            continue
         batch = l[index:index+4]
         text_a = batch[0][8:]
         text_b = batch[1][8:]
@@ -97,12 +102,15 @@ def get_relate_file_about_train(text_a):
     for i in file_map:
         print(i)
 
+def compare_predict_files(f1, f2):
+    pass
 
 def get_all_relate_file_about_false(text_a):
     pass
 
 
-def get_predict_info_from_file(file_path):
+
+def get_predict_info_from_colab_result(file_path):
     f = open(file_path,'r')
     content = f.read().split('\n')
     result_list = []
@@ -158,15 +166,50 @@ def calculate_f1(data_set):
     f1 = 2 * recall * precision / (recall + precision)
     return f1
 
-if __name__ == '__main__':
-    # get_predict_info_from_file('data/hybrid-predict.txt')
-    # see_predict(os.path.join('data', 'hybrid-predict.txt'), os.path.join('data', 'hybrid-predict-with-predict-label.json'))
-    data_set = json.load(open(os.path.join(DATA, 'hybrid-predict-with-predict-label.json'), 'r'))
+def show_f1_precision_and_recall(data_set):
     res = calculate_TFPN(data_set)
     for i in res:
         print(i, res[i])
     f1 = calculate_f1(data_set)
     recall = calculate_recall(data_set)
     precision = calculate_precision(data_set)
-    print(f1, recall, precision)
+    result = 'F1:{},Precision:{},Recall:{}'.format(f1,precision,recall)
+    print(result)
+
+def json_to_data_frame(json_file):
+    file = json.load(open(json_file, 'r'))
+    keys = file['0'].keys()
+    df = dict()
+    df['label'] = list()
+    df['query'] = list()
+    df['ui_info'] = list()
+    df['prediction'] = list()
+    for i in file:
+        i = file[i]
+        df['label'].append(i['label'])
+        df['prediction'].append(i['prediction'])
+        df['query'].append(i['text_a'])
+        df['ui_info'].append(i['text_b'])
+    csv_file = json_file[:json_file.index('.')]+'.csv'
+    df = pd.DataFrame(df)
+    df.to_csv(csv_file, index=False)
+    return pd.DataFrame(df)
+
+def compare_predict(p1, p2):
+    p1 = pd.read_csv(p1, index_col=False)
+    p2 = pd.read_csv(p2, index_col=False)
+    for index, item in p1.iterrows():
+        item = item.to_frame().T
+        if pd.merge(p2, item, on=p1.columns.to_list()).empty:
+            p1.drop(index, inplace=True)
+    print(p1)
+
+if __name__ == '__main__':
+    # data_set = json.load(open(os.path.join(DATA, 'version-keep_same_data.json'), 'r'))
+    # show_f1_precision_and_recall(data_set)
+    # data_set = json.load(open('data/version-remove_same_data-predict.json', 'r'))
+    # show_f1_precision_and_recall(data_set)
+    p1 = os.path.join(EVAL, 'version-keep_same_data.csv')
+    p2 = os.path.join(EVAL, 'version-remove_same_data.csv')
+    compare_predict(p1, p2)
     pass

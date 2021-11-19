@@ -1,7 +1,15 @@
 import os
 
+DATA_INDEX = {
+    'label',
+    'query',
+    'ui_info',
+    'prediction'
+}
+
 DATA = 'data'
 DATA_SET = os.path.join(DATA, 'data_set')
+EVAL = os.path.join(DATA, 'eval')
 
 ORIGIN_TRAIN = os.path.join(DATA_SET ,'origin_train.tsv')
 ORIGIN_TEST = os.path.join(DATA_SET, 'origin_test.tsv')
