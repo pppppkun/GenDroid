@@ -46,5 +46,22 @@ text_b是"confirm"
 
 - f1 recall precision不理想，考虑imbalance Data sets可以做的操作
 - 两个版本，去掉No里的重复后，进行了两次训练，第一次准确率比较低，87%，第二次很高98%，第二次的F recall和precise也比第一次高，但是第一次，把测试集中训练集里出现的数据全都删了
-- 新的工作流，在应用上输入测试，然后根据历史和当前测试的特征，筛除界面元素，接着根据模型筛选出一系列confidence的控件进行action
 - 重新构造数据集
+    - 目前是在根据trace，找到当前selector与ui api的对应关系，然后作为yes label，其余作为no label
+- 新的工作流，在应用上输入测试，然后根据历史和当前测试的特征，筛除界面元素，接着根据模型筛选出一系列confidence的控件进行action
+    - 版本A：老版本 版本B：新版本 模型已经经过版本A的fine-tune
+    - 读入版本A的测试数据（每个ui api和所需要调用的页面元素）
+    - 读入版本B的apk
+    - 在apk上运行测试
+    - 读入一个ui api，进行分析，获得一系列相关信息（是否会跳出页面，是否会切换到另一个activity，是否是输入，是否是点击）
+    - 获取所有的界面元素，过滤和相关信息不符合的数据
+    - 将剩下的界面元素输入到模型中，给予一个confidence列表
+    - 在confidence中进行尝试
+    - 如果能顺利执行下去？这里又会涉及到oracle的问题
+- 对于短动作序列的定义问题
+    - 可以定义一个action serial = {在当前activity上测试需要执行的所有动作}， action serial[-1] = 跳转
+    - action serial是否会有继承关系？其实action serial如果可以继承的话，好像也非常符合用户的习惯
+    - 希望定义一个符合用户习惯的action serial
+### tools
+- [https://github.com/androguard/androguard](androguard) 一个安卓逆向的工具
+- [https://github.com/openatx/uiautomator2](uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害
