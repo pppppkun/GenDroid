@@ -57,11 +57,11 @@ text_b是"confirm"
     - 获取所有的界面元素，过滤和相关信息不符合的数据
     - 将剩下的界面元素输入到模型中，给予一个confidence列表
     - 在confidence中进行尝试
-    - 如果能顺利执行下去？这里又会涉及到oracle的问题
+    - 如果能顺利执行下去？
 - 对于短动作序列的定义问题
     - 可以定义一个action serial = {在当前activity上测试需要执行的所有动作}， action serial[-1] = 跳转
     - action serial是否会有继承关系？其实action serial如果可以继承的话，好像也非常符合用户的习惯
     - 希望定义一个符合用户习惯的action serial
 ### tools
-- [https://github.com/androguard/androguard](androguard) 一个安卓逆向的工具
-- [https://github.com/openatx/uiautomator2](uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害
+- [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
+- [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害
