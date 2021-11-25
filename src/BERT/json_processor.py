@@ -241,7 +241,7 @@ def build_data_set(log):
 
 
 if __name__ == '__main__':
-    # train data build
+    # new_train data build
     new_log_data_set = build_data_set(NEW_LOG)
     # old_log_data_set = build_data_set(OLD_LOG)
     # data_set = new_log_data_set.union(old_log_data_set)

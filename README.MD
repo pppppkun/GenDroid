@@ -62,6 +62,8 @@ text_b是"confirm"
     - 可以定义一个action serial = {在当前activity上测试需要执行的所有动作}， action serial[-1] = 跳转
     - action serial是否会有继承关系？其实action serial如果可以继承的话，好像也非常符合用户的习惯
     - 希望定义一个符合用户习惯的action serial
+- 2021.11.25 新数据集的构造
+    - 复现了MaLSTM模型，在quora数据集上进行训练，准确率大概85的时候停止训练，用训练好的模型在原始数据上进行相似度检查，正确样本不动，错误样本从中挑选相似度最低的，目前已经将数据筛选出来
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
 - [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害
