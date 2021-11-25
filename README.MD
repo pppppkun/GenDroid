@@ -64,6 +64,12 @@ text_b是"confirm"
     - 希望定义一个符合用户习惯的action serial
 - 2021.11.25 新数据集的构造
     - 复现了MaLSTM模型，在quora数据集上进行训练，准确率大概85的时候停止训练，用训练好的模型在原始数据上进行相似度检查，正确样本不动，错误样本从中挑选相似度最低的，目前已经将数据筛选出来
+- 2021.11.25 如何创造我们自己的数据
+    - 首先由需求人员编写api和api描述，接着由测试人员编写测试代码
+- RQ
+    - 这个方法科学吗？
+    - 这个方法的效率如何
+    - 这个方法
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
 - [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害
