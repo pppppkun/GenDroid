@@ -70,6 +70,39 @@ text_b是"confirm"
     - 这个方法科学吗？
     - 这个方法的效率如何
     - 这个方法
+
+```python
+def read_apk():
+    pass
+
+
+def read_test_info():
+    pass
+
+
+def execute_test():
+    pass
+
+
+def record_action():
+    pass
+
+
+def get_all_node():
+    pass
+
+
+def filter_by_history():
+    pass
+
+
+def calculate_the_confidence_of_different_widgets():
+    pass
+
+
+def main():
+    pass
+```
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
 - [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害

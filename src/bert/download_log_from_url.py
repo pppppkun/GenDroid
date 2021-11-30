@@ -2,11 +2,14 @@ import json
 import requests
 import os
 import time
+
+
 def processOneJsonFile(jsonPath):
-    s = open(jsonPath,encoding='UTF-8')
+    s = open(jsonPath, encoding='UTF-8')
     ss = s.read()
     data = json.loads(ss)
     return data
+
 
 def downloadFromUrl(url):
     headers = {
@@ -17,18 +20,17 @@ def downloadFromUrl(url):
     # with open(os.path.join(os.path.dirname(os.path.abspath("__file__")), "file.txt"), "wb") as f:
     #     f.write(r.content)
 
+
 if __name__ == '__main__':
     url = 'http://xuatbeta.wxp.oa.com/ctreport/202105/14/2021051400764160/2641/1620975458_result_test_1Receipts_324104.json'
     url = 'http://xuatbeta.wxp.oa.com/ctreport/202105/14/2021051400764160/2641/1620975501196.jpg'
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36"}
-    
-    r = requests.get(url,verify=False,headers=headers)
+
+    r = requests.get(url, verify=False, headers=headers)
     with open(os.path.join(os.path.dirname(os.path.abspath("__file__")), "file.txt"), "wb") as f:
         f.write(r.content)
     exit(0)
-
-
 
     # path = 'E:\\sa\\response_1621237627750.json'
 

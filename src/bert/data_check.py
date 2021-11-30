@@ -1,7 +1,7 @@
 import json
 import os
-from constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_TRAIN, VERSION_TRAIN, HTML_ENTIRY
-from common import files
+from utils.constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_TRAIN, VERSION_TRAIN, HTML_ENTIRY
+from utils.common import files
 
 
 

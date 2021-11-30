@@ -1,5 +1,9 @@
 import os
-from constant import HTML_ENTIRY
+from pandas.plotting import table
+import matplotlib.pyplot as plt
+
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']  # 显示中文字体
+from .constant import HTML_ENTITY
 
 
 def files(log):
@@ -13,13 +17,13 @@ def files(log):
 
 
 def translate_html_entity(text):
-    for key in HTML_ENTIRY:
+    for key in HTML_ENTITY:
         if key in text:
-            text = text.replace(key, HTML_ENTIRY[key])
+            text = text.replace(key, HTML_ENTITY[key])
     return text
 
 
-def translate_seria_text_to_english(seria):
+def translate_series_text_to_english(series):
     import six
     from google.cloud import translate_v2 as translate
 
@@ -28,7 +32,7 @@ def translate_seria_text_to_english(seria):
     # Text can also be a sequence of strings, in which case this method
     # will return a sequence of results for each text.
     count = 0
-    for data in seria:
+    for data in series:
         result[data] = translate_client.translate(
             data, target_language='en')['translatedText']
         result[data] = translate_html_entity(result[data])
@@ -39,3 +43,14 @@ def translate_seria_text_to_english(seria):
     return result
 
 
+def df2png(df, file_name):
+    fig = plt.figure(figsize=(3, 4), dpi=600)  # dpi表示清晰度
+    ax = fig.add_subplot(111, frame_on=False)
+    ax.xaxis.set_visible(False)  # hide the x axis
+    ax.yaxis.set_visible(False)  # hide the y axis
+    table(ax, df, loc='center')  # 将df换成需要保存的dataframe即可
+    plt.savefig(file_name)
+
+
+def generator_result():
+    pass

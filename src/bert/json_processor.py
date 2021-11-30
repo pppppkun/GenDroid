@@ -1,9 +1,9 @@
 from abc import abstractmethod
 import json
 import os
+from utils.constant import NEW_LOG
+from utils.common import files, df2png
 import xml.etree.ElementTree as et
-from common import files, translate_html_entity 
-from constant import NEW_LOG, OLD_LOG
 import pandas as pd
 
 PREP = 'prep'
@@ -183,7 +183,7 @@ def see_predict():
     index = 0
     j = 0
     while index < len(l):
-        batch = l[index:index+4]
+        batch = l[index:index + 4]
         text_a = batch[0][8:]
         text_b = batch[1][8:]
         label = batch[2][6:]
@@ -211,8 +211,7 @@ def see_predict():
     json.dump({**t, **f}, predict, ensure_ascii=False, sort_keys=True)
 
 
-
-def build_data_set(log):
+def build_data_set(log, count=None):
     is_new_log = True if log == NEW_LOG else False
     # data_set= DataSet(is_remove_duplicate=is_remove_duplicate)
     data_set = dict()
@@ -222,13 +221,17 @@ def build_data_set(log):
     for path in files(log):
         dsb = DataSetBuild(path, is_new_log)
         res = dsb.json_file_process()
+        if count is not None:
+            count -= 1
+            if count == 0:
+                break
         for example in res:
-            query = example['query'] 
+            query = example['query']
             if query == 'init' or query == 'system requests from direct business' or query == 'wrap do repair':
                 continue
-            text_b = example['positive_doc'].replace('\n', ' ') 
+            text_b = example['positive_doc'].replace('\n', ' ')
             data_set['label'].append('yes')
-            data_set['query'].append(query) 
+            data_set['query'].append(query)
             data_set['ui_info'].append(text_b)
             # data_set.add(Data('yes', query, text_b))
             for n_c in example['negative_docs']:
@@ -242,7 +245,7 @@ def build_data_set(log):
 
 if __name__ == '__main__':
     # new_train data build
-    new_log_data_set = build_data_set(NEW_LOG)
+    new_log_data_set = build_data_set(NEW_LOG, 10)
     # old_log_data_set = build_data_set(OLD_LOG)
     # data_set = new_log_data_set.union(old_log_data_set)
     print(new_log_data_set.head())
