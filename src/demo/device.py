@@ -1,21 +1,36 @@
-import uiautomator2 as u2
-import logging
+import xml.etree.ElementTree as et
+from demo.adb import *
+from androguard.core.bytecodes.apk import APK
 
-logging.basicConfig(level=logging.INFO)
 
 class Device:
-    def __init__(self, apk_path, serial=None):
+    def __init__(self, apk_path=None, serial=None):
         if serial:
             self.u = u2.connect(serial)
         else:
             self.u = u2.connect()
-        self.install_apk(apk_path)
+        if apk_path:
+            apk_ = APK(apk_path)
+            if apk_.get_package() not in get_all_installed_package(self.u):
+                install_grant_runtime_permissions(self.u, apk_path)
 
-    def install_apk(self, apk_path):
-        logging.info('push and install apk {}'.format(apk_path))
-        self.u.app_install(apk_path)
-        logging.info('install done.')
+    def get_ui_info_by_package(self, selector):
+        ui_info = self.u.dump_hierarchy()
+        root = et.fromstring(ui_info)
+        result = []
+        for child in root.iter():
+            if 'package' in child.attrib and child.attrib['package'] == selector:
+                result.append(child)
+        return result
+
+    def get_ui_info(self):
+        return self.u.dump_hierarchy()
 
 
 if __name__ == '__main__':
-    d = Device(serial='emulator-5554', apk_path='../../benchmark/etar/etar1.0.25.apk')
+    d = Device()
+    install_packages = get_all_installed_package(d.u)
+    print(install_packages)
+    apk = APK('../../benchmark/etar/etar1.0.26.apk')
+    print(apk.get_package())
+    # app_node = d.get_ui_info_by_package()

@@ -62,6 +62,7 @@ text_b是"confirm"
     - 可以定义一个action serial = {在当前activity上测试需要执行的所有动作}， action serial[-1] = 跳转
     - action serial是否会有继承关系？其实action serial如果可以继承的话，好像也非常符合用户的习惯
     - 希望定义一个符合用户习惯的action serial
+    - 如果一直在一个activity上的话，之前的序列会非常的长，现在有一个新想法，增加一个定义是把一系列动作后，虽然一直在同一个activity，但是也是一个短动作，可以检测是否前后两个界面的差别在允许范围内？
 - 2021.11.25 新数据集的构造
     - 复现了MaLSTM模型，在quora数据集上进行训练，准确率大概85的时候停止训练，用训练好的模型在原始数据上进行相似度检查，正确样本不动，错误样本从中挑选相似度最低的，目前已经将数据筛选出来
 - 2021.11.25 如何创造我们自己的数据
@@ -69,8 +70,14 @@ text_b是"confirm"
 - RQ
     - 这个方法科学吗？
     - 这个方法的效率如何
-    - 这个方法
-
+- 2021.12.02 详细设计
+    - 对老版本对测试进行record，得到old_test_log
+    - 将old_test_log丢进analysis进行分析，获得一系列相关信息（是否会跳出页面，是否会切换到另一个activity，是否是输入，是否是点击），这步主要是读入之类的
+    - 将old_test_log在bert里进行fine-tune
+    - 然后在新版本上replay，把analysis丢到executor里执行
+    - 考虑能否直接找到，能的话直接下一步，不能直接找到，首先排除没有意义的node，然后丢到bert里获得信息，然后一个个尝试
+    - 输出一个new_test_log
+    
 ```python
 def read_apk():
     pass
