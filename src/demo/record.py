@@ -4,6 +4,8 @@ change
 """
 import json
 import time
+from pyecharts import options as opts
+from pyecharts.charts import Tree
 
 
 class Recorder:
@@ -32,9 +34,10 @@ def record_action(
         file_path,
         device,
         xml,
+        event_series,
+        depend,
         screen_shot_path=None,
         write_mode=APPEND,
-        function_name=None,
         selector=None,
 ):
     file_content = json.load(open(file_path, 'r'))
@@ -49,14 +52,56 @@ def record_action(
         record['screen_shot_path'] = screen_shot_path
     if screen_shot_path and not device:
         raise RuntimeError('not specify device')
-    if function_name:
-        record['trace'] = function_name
     record['current_info'] = device.app_current()
     record['time'] = time.time()
     record['xml'] = xml
+    record['event_series'] = event_series
+    record['depend'] = depend
     if write_mode == APPEND:
         file_content['record_list'].append(record)
     elif write_mode == WRITE:
         file_content['record_list'] = []
         file_content['record_list'].append(record)
     json.dump(file_content, open(file_path, 'w'))
+
+
+def create_tree(record_content):
+    record_list = record_content['record_list']
+    root = record_content['description']
+    node = dict()
+    for record in record_list:
+        leaf = record['action']
+        leaf_father = record['event_series']
+        leaf_father_father = record['depend']
+        leaf_father_node = node.setdefault(leaf_father, {'name': leaf_father, 'children': []})
+        leaf_father_node['children'].append({'name': leaf})
+        leaf_father_father_node = node.setdefault(leaf_father_father, {'name': leaf_father_father, 'children': []})
+        if leaf_father_node not in leaf_father_father_node['children']:
+            leaf_father_father_node['children'].append(leaf_father_node)
+    # print(json.dumps(node[root], indent=4))
+    return node[root]
+
+
+def record_visualization(record_path):
+    record_content = json.load(open(record_path, 'r'))
+    tree = create_tree(record_content)
+    (
+        Tree()
+        .add(
+            "",
+            [tree],
+            collapse_interval=4,
+            orient="TB",
+            label_opts=opts.LabelOpts(
+                position="top",
+                horizontal_align="right",
+                vertical_align="middle",
+            ),
+        )
+        .set_global_opts(title_opts=opts.TitleOpts(title=record_content['description']))
+        .set_series_opts(label_opts=opts.LabelOpts(font_size=16))
+        .render("tree_top_bottom.html")
+    )
+
+
+record_visualization('../../benchmark/simpleCalendarPro/result.json')
