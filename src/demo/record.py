@@ -6,12 +6,14 @@ import json
 import time
 from pyecharts import options as opts
 from pyecharts.charts import Tree
+from demo.event import Event
 
 
-class Recorder:
-    def __init__(self):
-        pass
-    # TODO
+class Record:
+    def __init__(self, data):
+        for i in data:
+            self.__setattr__(i, data[i])
+        self.event = Event(self.action, self.selector)
 
 
 APPEND = 'a'
@@ -87,7 +89,7 @@ def record_visualization(record_path):
     tree = create_tree(record_content)
     (
         Tree()
-        .add(
+            .add(
             "",
             [tree],
             collapse_interval=4,
@@ -98,10 +100,11 @@ def record_visualization(record_path):
                 vertical_align="middle",
             ),
         )
-        .set_global_opts(title_opts=opts.TitleOpts(title=record_content['description']))
-        .set_series_opts(label_opts=opts.LabelOpts(font_size=16))
-        .render("tree_top_bottom.html")
+            .set_global_opts(title_opts=opts.TitleOpts(title='add task'))
+            .set_series_opts(label_opts=opts.LabelOpts(font_size=16))
+            .render("tree_top_bottom.html")
     )
 
 
-record_visualization('../../benchmark/simpleCalendarPro/result.json')
+if __name__ == '__main__':
+    record_visualization('../../benchmark/simpleCalendarPro/result.json')

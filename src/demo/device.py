@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as et
-from demo.adb import *
+import uiautomator2 as u2
+from demo.adb import install_grant_runtime_permissions, get_all_installed_package
 from androguard.core.bytecodes.apk import APK
+from demo.event import event_action_lambda_map
 
 
 class EventDoError(RuntimeError):
@@ -31,11 +33,14 @@ class Device:
     def get_ui_info(self):
         return self.u.dump_hierarchy()
 
-    def do_event(self, event):
-        if event:
+    def execute(self, event):
+        try:
+            event_action_lambda_map[event.action](self, event)
+        except RuntimeError:
             pass
-        else:
-            raise EventDoError(event) from RuntimeError
+
+    def select_widget(self, selector):
+        pass
 
 
 if __name__ == '__main__':
