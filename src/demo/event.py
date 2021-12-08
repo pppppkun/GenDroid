@@ -1,4 +1,3 @@
-KEY_EVENT = 'key'
 CLICK_EVENT = 'click'
 LONG_CLICK_EVENT = 'long_click'
 DOUBLE_CLICK_EVENT = 'double_click'
@@ -6,8 +5,31 @@ SET_TEXT_EVENT = 'set_text'
 DRAG_EVENT = 'drag_to',
 TOUCH_EVENT = 'touch'
 
+KEY_EVENTS = {
+    'home',
+    'back',
+    'left',
+    'right',
+    'up',
+    'down',
+    'center',
+    'menu',
+    'volume_up',
+    'volume_down',
+    'volume_mute',
+    'power'
+}
+
+event_init_map = {
+    # KEY_EVENT: lambda record: Event(record.action),
+    **{KEY_EVENT: lambda record: Event(record.action) for KEY_EVENT in KEY_EVENTS},
+    CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
+    LONG_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
+    SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.data['text'])
+}
+
 event_action_lambda_map = {
-    KEY_EVENT: lambda device, event: device.keyevent(event.key),
+    **{KEY_EVENT: lambda device, event: device.keyevent(event.action) for KEY_EVENT in KEY_EVENTS},
     CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
     LONG_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).long_click(),
     SET_TEXT_EVENT: lambda device, event: device.select_widget(event.selector).set_text(event.text),
@@ -16,12 +38,13 @@ event_action_lambda_map = {
 
 
 class Event:
-    def __init__(self, action, selector, **kwargs):
+    def __init__(self, action, **kwargs):
         self.action = action
-        self.selector = selector
         for i in kwargs:
             self.__setattr__(i, kwargs[i])
 
 
 if __name__ == '__main__':
-    e = Event('click', {'a': 1}, text='123', location=123)
+    # e = Event('click', text='123', location=123)
+    # print(e.text)
+    print(event_init_map)

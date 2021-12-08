@@ -1,4 +1,4 @@
-from demo.device import Device, EventDoError
+from demo.device import Device, EventError
 from demo.analyst import Analyst
 from demo.series import Series
 from demo.repair import Repair
@@ -25,8 +25,8 @@ class Executor:
                 is_successful = False
                 for j in range(len(events)):
                     new_event = events[j]
-                    execute_result = self.device.execute(new_event)
-                    result = self.analysis.is_right_repair(execute_result, record)
+                    actual_result = self.device.execute(new_event)
+                    result = self.analysis.is_right_repair(actual_result, record.xml)
                     if result:
                         is_successful = True
                         break

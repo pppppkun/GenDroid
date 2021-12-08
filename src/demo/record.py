@@ -6,14 +6,14 @@ import json
 import time
 from pyecharts import options as opts
 from pyecharts.charts import Tree
-from demo.event import Event
+from demo.event import event_init_map
 
 
 class Record:
     def __init__(self, data):
         for i in data:
             self.__setattr__(i, data[i])
-        self.event = Event(self.action, self.selector)
+        self.event = event_init_map[self.action](self)
 
 
 APPEND = 'a'
@@ -38,6 +38,7 @@ def record_action(
         xml,
         event_series,
         depend,
+        action_data=None,
         screen_shot_path=None,
         write_mode=APPEND,
         selector=None,
@@ -59,6 +60,8 @@ def record_action(
     record['xml'] = xml
     record['event_series'] = event_series
     record['depend'] = depend
+    if action_data:
+        record['data'] = action_data
     if write_mode == APPEND:
         file_content['record_list'].append(record)
     elif write_mode == WRITE:
