@@ -34,17 +34,31 @@ class Device:
         try:
             if type(event) == Event:
                 event_action_lambda_map[event.action](self, event)
+                self.u.sleep(1)
             elif type(event) == list:
                 for e in event:
                     event_action_lambda_map[e.action](self, event)
+                    self.u.sleep(1)
             return True
         except RuntimeError:
             return False
 
     def select_widget(self, selector):
-        pass
+        temp = dict()
+        translate = {
+            'text': 'text',
+            'content-desc': 'descriptionContains',
+            'index': 'index',
+        }
+        for i in selector:
+            temp[translate[i]] = selector[i]
+        return self.u(**temp)
 
 
 if __name__ == '__main__':
-    d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
+    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
     # app_node = d.get_ui_info_by_package()
+    selector = {
+        'description': '123123',
+        'text': '123'
+    }

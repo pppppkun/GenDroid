@@ -29,7 +29,7 @@ event_init_map = {
 }
 
 event_action_lambda_map = {
-    **{KEY_EVENT: lambda device, event: device.keyevent(event.action) for KEY_EVENT in KEY_EVENTS},
+    **{KEY_EVENT: lambda device, event: device.u.keyevent(event.action) for KEY_EVENT in KEY_EVENTS},
     CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
     LONG_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).long_click(),
     SET_TEXT_EVENT: lambda device, event: device.select_widget(event.selector).set_text(event.text),

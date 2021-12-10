@@ -46,12 +46,10 @@ def record_action(
     file_content = json.load(open(file_path, 'r'))
     record = dict()
     record['action'] = action_name
-    # record['action_result'] = action_result
     if selector:
         record['selector'] = selector
     if screen_shot_path and device:
         device.screenshot(screen_shot_path)
-        # d.screenshot("home.jpg")
         record['screen_shot_path'] = screen_shot_path
     if screen_shot_path and not device:
         raise RuntimeError('not specify device')

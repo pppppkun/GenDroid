@@ -19,3 +19,4 @@ if __name__ == '__main__':
     series = Series(record['record_list'])
     repair = Repair(args.repair_strategy)
     executor = Executor(device, analysis, series, repair)
+    executor.execute()
