@@ -19,6 +19,7 @@ transfer = {
     'class': {PREP: 'class', INDEX: 'classIndex', OP: lambda x, y: x == y},
     'description': {PREP: 'content-desc', INDEX: None, OP: lambda x, y: x == y}
 }
+# transfer(rid, resource-id, idIndex, op)
 
 
 def get_all_nodes(root, ns: list):

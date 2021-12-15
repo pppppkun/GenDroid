@@ -5,6 +5,7 @@ from utils.constant import DATA, DATA_SET, EVAL, HYBRID_TRAIN, ORIGIN_TRAIN, OLD
 from bert.json_processor import DataSetBuild
 from utils.common import files
 import pandas as pd
+from collections import defaultdict
 
 
 def see_predict(file_path, output_path):
@@ -183,24 +184,20 @@ def show_f1_precision_and_recall(data_set):
     recall = calculate_recall(data_set)
     precision = calculate_precision(data_set)
     result = 'F1:{},Precision:{},Recall:{}'.format(f1, precision, recall)
-    pd.DataFrame(
-        {
-            "recall": recall,
-            "precision": precision,
-            "F1": f1
-        },
-        index=[0]
-    ).to_latex('remove_same_data.tex')
+    print(result)
+    # pd.DataFrame(
+    #     {
+    #         "recall": recall,
+    #         "precision": precision,
+    #         "F1": f1
+    #     },
+    #     index=[0]
+    # ).to_latex('remove_same_data.tex')
 
 
 def json_to_data_frame(json_file):
     file = json.load(open(json_file, 'r'))
-    keys = file['0'].keys()
-    df = dict()
-    df['label'] = list()
-    df['query'] = list()
-    df['ui_info'] = list()
-    df['prediction'] = list()
+    df = defaultdict(list)
     for i in file:
         i = file[i]
         df['label'].append(i['label'])

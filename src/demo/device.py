@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as et
 import uiautomator2 as u2
+from uiautomator2.exceptions import BaseError
 from demo.adb import install_grant_runtime_permissions, get_all_installed_package
 from androguard.core.bytecodes.apk import APK
 from demo.event import event_action_lambda_map, Event
@@ -17,6 +18,7 @@ class Device:
         else:
             self.u = u2.connect()
         apk_ = APK(apk_path)
+        self.apk_path = apk_path
         if apk_.get_package() not in get_all_installed_package(self.u):
             install_grant_runtime_permissions(self.u, apk_path)
         self.package = apk_.get_package()
@@ -39,9 +41,10 @@ class Device:
                 for e in event:
                     event_action_lambda_map[e.action](self, event)
                     self.u.sleep(1)
-            return True
-        except RuntimeError:
-            return False
+            return self.u.dump_hierarchy(), True
+        # maybe too much
+        except BaseError:
+            return None, False
 
     def select_widget(self, selector):
         temp = dict()
@@ -54,11 +57,24 @@ class Device:
             temp[translate[i]] = selector[i]
         return self.u(**temp)
 
+    # need a more efficiency way.
+    # TODO
+    def stop_and_restart(self, events):
+        self.u.app_stop(self.package)
+        self.u.app_uninstall(self.package)
+        install_grant_runtime_permissions(self.u, self.apk_path)
+        for event in events:
+            event_action_lambda_map[event.action](self, event)
+
 
 if __name__ == '__main__':
-    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
+    d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
     # app_node = d.get_ui_info_by_package()
     selector = {
         'description': '123123',
         'text': '123'
     }
+    try:
+        d.u(**selector).click()
+    except BaseError:
+        print(1)

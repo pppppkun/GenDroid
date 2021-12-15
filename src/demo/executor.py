@@ -1,4 +1,4 @@
-from demo.device import Device, EventError
+from demo.device import Device
 from demo.analyst import Analyst
 from demo.series import Series
 from demo.repair import Repair
@@ -10,14 +10,15 @@ class Executor:
         self.analysis = analysis
         self.series = series
         self.repair = repair
-        self.repaired_event = []
+        self.repaired_events = []
         pass
 
     def execute(self):
         for i in range(len(self.series)):
             record = self.series[i]
-            result = self.device.execute(record.event)
+            _, result = self.device.execute(record.event)
             if result:
+                self.repaired_events.append(record.event)
                 continue
             else:
                 gui = self.device.get_ui_info()
@@ -32,4 +33,9 @@ class Executor:
                         break
                 if is_successful:
                     continue
-                result = self.repair.recovery(self.series[i+1], self.device)
+                repair_events, now_event = self.repair.recovery(self.series, self.device, i)
+                for i in range(len(repair_events)):
+                    self.repaired_events.pop()
+                for event in repair_events:
+                    self.repaired_events.append(event)
+                self.repaired_events.append(now_event)
