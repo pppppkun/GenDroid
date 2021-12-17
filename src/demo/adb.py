@@ -4,9 +4,9 @@ import logging
 
 
 def get_all_installed_package(u: Device):
-    output, exit_code = u.shell("pm list packages -f")
-    if exit_code == 0:
-        return output
+    ret = u.shell("pm list packages -f")
+    if ret.exit_code == 0:
+        return ret.output
     else:
         logging.warning('can\'t load installed package ')
 

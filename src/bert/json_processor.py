@@ -1,10 +1,12 @@
-from abc import abstractmethod
 import json
 import os
-from utils.constant import NEW_LOG
-from utils.common import files, df2png
 import xml.etree.ElementTree as et
+from abc import abstractmethod
+
 import pandas as pd
+
+from utils.common import files
+from utils.constant import NEW_LOG
 
 PREP = 'prep'
 INDEX = 'index'
@@ -19,6 +21,8 @@ transfer = {
     'class': {PREP: 'class', INDEX: 'classIndex', OP: lambda x, y: x == y},
     'description': {PREP: 'content-desc', INDEX: None, OP: lambda x, y: x == y}
 }
+
+
 # transfer(rid, resource-id, idIndex, op)
 
 
