@@ -8,7 +8,13 @@ import xml.etree.ElementTree as et
 
 # TODO fill the map
 action_attrib_map = {
-    'set_text': ['enable', 'focusable']
+    'set_text': ['enable', 'focusable'],
+    'click': ['clickable'],
+    'check': ['checkable'],
+    'double_click': ['longClickable'],
+    'long_click': [],
+    'swipe': [],
+    'drag': [],
 }
 
 
@@ -46,7 +52,8 @@ class Repair:
         # need a filter
         # node = [node for node in root.iter() if record]
 
-    def construct_event_series(self, device: Device, record_series):
+    @staticmethod
+    def construct_event_series(device: Device, record_series):
         yield 1
         pass
 

@@ -77,6 +77,9 @@ text_b是"confirm"
     - 然后在新版本上replay，把analysis丢到executor里执行
     - 考虑能否直接找到，能的话直接下一步，不能直接找到，首先排除没有意义的node，然后丢到bert里获得信息，然后一个个尝试
     - 输出一个new_test_log
+- 2021.12.17
+    - 关于bert的迁移，现在看来可能比我想的简单，因为tpu模块同样支持cpu和gpu，要做的是把check point搞下来，搞下来后再把config配置一下，config目前看来基本上没什么要配置的东西，因为在本机上用不到gpu，主要关注的就是model build，tpuemulate和config的build
+    - 成功迁移 2021.12.18
     
 ```python
 def read_apk():

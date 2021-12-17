@@ -2,8 +2,9 @@ CLICK_EVENT = 'click'
 LONG_CLICK_EVENT = 'long_click'
 DOUBLE_CLICK_EVENT = 'double_click'
 SET_TEXT_EVENT = 'set_text'
-DRAG_EVENT = 'drag_to',
+DRAG_EVENT = 'drag_to'
 TOUCH_EVENT = 'touch'
+CHECK_CLICK_EVENT = 'check'
 
 KEY_EVENTS = {
     'home',
@@ -25,7 +26,8 @@ event_init_map = {
     **{KEY_EVENT: lambda record: Event(record.action) for KEY_EVENT in KEY_EVENTS},
     CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
     LONG_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
-    SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.data['text'])
+    SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.data['text']),
+    CHECK_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector)
 }
 
 event_action_lambda_map = {
@@ -33,6 +35,7 @@ event_action_lambda_map = {
     CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
     LONG_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).long_click(),
     SET_TEXT_EVENT: lambda device, event: device.select_widget(event.selector).set_text(event.text),
+    CHECK_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
     DRAG_EVENT: lambda device, event: device.select_widget(event.selector).drag_to(event.drag, event.duration)
 }
 
