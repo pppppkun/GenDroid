@@ -4,6 +4,7 @@ this class will give confidence between query and given node
 from demo.series import Series
 from demo.device import Device
 from functools import reduce
+from bert.api import predict_two_sentence
 import xml.etree.ElementTree as et
 
 # TODO fill the map
@@ -20,6 +21,7 @@ action_attrib_map = {
 
 # TODO move checkpoint to local
 def confidence(nodes, selector):
+    predict_two_sentence("1", "1")
     pass
 
 
@@ -86,5 +88,4 @@ class Repair:
 
 
 if __name__ == '__main__':
-    l = [1, 2, 3, 4, 5]
-    map()
+    pass
