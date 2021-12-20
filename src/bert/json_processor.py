@@ -23,9 +23,6 @@ transfer = {
 }
 
 
-# transfer(rid, resource-id, idIndex, op)
-
-
 def get_all_nodes(root, ns: list):
     for child in root:
         ns.append(child)

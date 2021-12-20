@@ -38,7 +38,8 @@ def predict_two_sentence(seq1, seq2):
     data = json.dumps({"signature_name": "serving_default", "instances": instances})
     response = requests.post(endpoints, data=data, headers=headers)
     prediction = json.loads(response.text)['predictions']
-    print(prediction)
+    # print(prediction)
+    return prediction
 
 
 if __name__ == '__main__':
