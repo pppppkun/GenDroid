@@ -26,7 +26,7 @@ event_init_map = {
     **{KEY_EVENT: lambda record: Event(record.action) for KEY_EVENT in KEY_EVENTS},
     CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
     LONG_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
-    SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.data['text']),
+    SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.action_data['text']),
     CHECK_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector)
 }
 

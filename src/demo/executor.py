@@ -39,3 +39,6 @@ class Executor:
                 for event in repair_events:
                     self.repaired_events.append(event)
                 self.repaired_events.append(now_event)
+
+    def insert_new_event(self):
+        pass

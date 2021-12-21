@@ -38,6 +38,7 @@ def record_action(
         xml,
         event_series,
         depend,
+        description=None,
         action_data=None,
         screen_shot_path=None,
         write_mode=APPEND,
@@ -56,6 +57,7 @@ def record_action(
     record['current_info'] = device.app_current()
     record['time'] = time.time()
     record['xml'] = xml
+    record['description'] = description
     record['event_series'] = event_series
     record['depend'] = depend
     if action_data:

@@ -8,3 +8,6 @@ class Analyst:
     def is_right_repair(self, actual, expect):
         # TODO
         pass
+
+    def is_right_back(self, origin, back_result):
+        pass
