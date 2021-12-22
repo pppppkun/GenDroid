@@ -3,11 +3,11 @@ this class will give confidence between query and given node
 """
 from demo.series import Series
 from demo.device import Device
-from demo.record import Record
 from demo.event import event_init_map
 from copy import deepcopy
 from functools import reduce
 from bert.api import predict_two_sentence
+from collections import namedtuple
 import xml.etree.ElementTree as et
 
 # TODO fill the map
@@ -27,13 +27,15 @@ attributes = {
     'resource-id'
 }
 
+NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
+
 
 def confidence(node: et.Element, description):
     result = (
         lambda x: [predict_two_sentence(description, attribute)[0] for attribute in get_node_attribute(x).values()])(
         node)
     result.sort(key=lambda x: -x)
-    return result[0]
+    return NodeWithConfidence(node, result[0])
 
 
 def get_node_attribute(node: et.Element):
@@ -96,15 +98,14 @@ class Repair:
             lambda _node: _node.get('package') == record.current_info['package']
         ).append(
             map,
-            lambda x: (x, confidence(x, record.description))
+            lambda x: confidence(x, record.description)
         ).append(
             sorted,
-            lambda x: -x[1]
+            lambda x: -x.confidence
         )
         nodes_with_confidence = f.do()
-        # todo construct a event(action equals record.action, selector construct by widget)
         for node_with_conf in nodes_with_confidence:
-            selector = get_node_attribute(node_with_conf[0])
+            selector = get_node_attribute(node_with_conf.node)
             _ = deepcopy(record)
             _.selector = selector
             yield event_init_map[_.action](_)

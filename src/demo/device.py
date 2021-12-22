@@ -67,6 +67,7 @@ class Device:
         self.u.app_stop(self.package)
         self.u.app_uninstall(self.package)
         install_grant_runtime_permissions(self.u, self.apk_path)
+        self.u.app_start(self.package)
         for event in events:
             event_action_lambda_map[event.action](self, event)
 

@@ -4,25 +4,36 @@ from demo.series import Series
 from demo.repair import Repair
 import logging
 
-log = logging.getLogger('executor')
-log.setLevel(logging.DEBUG)
+executor_log = logging.getLogger('executor')
+executor_log.setLevel(logging.DEBUG)
+executor_log_ch = logging.StreamHandler()
+executor_log_ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+executor_log_ch.setFormatter(formatter)
+executor_log.addHandler(executor_log_ch)
 
 
 class Executor:
-    def __init__(self, device: Device, analysis: Analyst, series: Series, repair: Repair):
+    def __init__(self, device: Device, analysis: Analyst, series: Series, repair: Repair, verbose):
         self.device = device
         self.analysis = analysis
         self.series = series
         self.repair = repair
         self.repaired_events = []
+        self.verbose = verbose
+        if self.verbose:
+            executor_log_ch.setLevel(logging.DEBUG)
+        else:
+            executor_log_ch.setLevel(logging.INFO)
         pass
 
     def execute(self):
         for i in range(len(self.series)):
             record = self.series[i]
-            log.debug(str(i) + ' ' + record.__str__())
+            executor_log.info('now execute record ' + str(i))
+            executor_log.debug(record.__str__())
             _, result = self.device.execute(record.event)
-            log.debug('result ', result)
+            executor_log.info('result: {}'.format(result))
             if result:
                 self.repaired_events.append(record.event)
                 continue
@@ -30,9 +41,10 @@ class Executor:
                 gui = self.device.get_ui_info()
                 events = self.repair.select(gui, record)
                 is_successful = False
-                log.debug('try to repair this event')
+                executor_log.info('try to repair this event')
                 for event in events:
-                    log.debug('try event:' + event)
+                    executor_log.info('try event')
+                    executor_log.debug(event.__str__())
                     gui, execute_result = self.device.execute(event)
                     result = self.analysis.is_right_repair(execute_result, record.xml)
                     if result:

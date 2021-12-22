@@ -12,6 +12,7 @@ parser.add_argument('-apk_path', '-ap', dest='apk_path', type=str, help='point a
                     required=True)
 parser.add_argument('-test_record', '-tr', dest='test_record', type=str, help='point a test record')
 parser.add_argument('-repair_strategy', '-rs', dest='repair_strategy', type=str, help='Specify a repair policy')
+parser.add_argument('-verbose', dest='verbose', action='store_true', help='start detailed output')
 if __name__ == '__main__':
     args = parser.parse_args()
     device = Device(apk_path=args.apk_path)
@@ -19,5 +20,5 @@ if __name__ == '__main__':
     record = json.load(open(args.test_record, 'r'))
     series = Series(record['record_list'])
     repair = Repair(args.repair_strategy)
-    executor = Executor(device, analysis, series, repair)
+    executor = Executor(device, analysis, series, repair, args.verbose)
     executor.execute()

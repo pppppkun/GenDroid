@@ -7,7 +7,7 @@ class Analyst:
 
     def is_right_repair(self, actual, expect):
         # TODO
-        return True
+        return False
 
     def is_right_back(self, origin, back_result):
         return True
