@@ -2,6 +2,10 @@ from demo.device import Device
 from demo.analyst import Analyst
 from demo.series import Series
 from demo.repair import Repair
+import logging
+
+log = logging.getLogger('executor')
+log.setLevel(logging.DEBUG)
 
 
 class Executor:
@@ -16,7 +20,9 @@ class Executor:
     def execute(self):
         for i in range(len(self.series)):
             record = self.series[i]
+            log.debug(str(i) + ' ' + record.__str__())
             _, result = self.device.execute(record.event)
+            log.debug('result ', result)
             if result:
                 self.repaired_events.append(record.event)
                 continue
@@ -24,13 +30,15 @@ class Executor:
                 gui = self.device.get_ui_info()
                 events = self.repair.select(gui, record)
                 is_successful = False
-                for j in range(len(events)):
-                    new_event = events[j]
-                    actual_result = self.device.execute(new_event)
-                    result = self.analysis.is_right_repair(actual_result, record.xml)
+                log.debug('try to repair this event')
+                for event in events:
+                    log.debug('try event:' + event)
+                    gui, execute_result = self.device.execute(event)
+                    result = self.analysis.is_right_repair(execute_result, record.xml)
                     if result:
                         is_successful = True
                         break
+                    self.device.stop_and_restart(self.series[:i])
                 if is_successful:
                     continue
                 repair_events, now_event = self.repair.recovery(self.series, self.device, i)

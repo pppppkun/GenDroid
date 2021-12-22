@@ -19,9 +19,11 @@ class Device:
             self.u = u2.connect()
         apk_ = APK(apk_path)
         self.apk_path = apk_path
-        if apk_.get_package() not in get_all_installed_package(self.u):
-            install_grant_runtime_permissions(self.u, apk_path)
         self.package = apk_.get_package()
+        if apk_.get_package() in get_all_installed_package(self.u):
+            self.u.app_uninstall(self.package)
+        install_grant_runtime_permissions(self.u, apk_path)
+        self.u.app_start(package_name=self.package, wait=True)
 
     def get_ui_info_by_package(self):
         ui_info = self.u.dump_hierarchy()
@@ -52,6 +54,8 @@ class Device:
             'text': 'text',
             'content-desc': 'descriptionContains',
             'index': 'index',
+            'resource-id': 'resourceId',
+            'class': 'className'
         }
         for i in selector:
             temp[translate[i]] = selector[i]
@@ -68,13 +72,5 @@ class Device:
 
 
 if __name__ == '__main__':
-    d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
+    d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro7.apk')
     # app_node = d.get_ui_info_by_package()
-    selector = {
-        'description': '123123',
-        'text': '123'
-    }
-    try:
-        d.u(**selector).click()
-    except BaseError:
-        print(1)

@@ -1,5 +1,6 @@
 import argparse
 import json
+
 from demo.device import Device
 from demo.analyst import Analyst
 from demo.series import Series

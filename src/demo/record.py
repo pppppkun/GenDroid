@@ -15,6 +15,11 @@ class Record:
             self.__setattr__(i, data[i])
         self.event = event_init_map[self.action](self)
 
+    def __str__(self):
+        return 'Record: action={action}, selector={selector}, description={description}'.format(action=self.action,
+                                                                                                selector=self.selector,
+                                                                                                description=self.description)
+
 
 APPEND = 'a'
 WRITE = 'w'
@@ -38,7 +43,7 @@ def record_action(
         xml,
         event_series,
         depend,
-        description=None,
+        description,
         action_data=None,
         screen_shot_path=None,
         write_mode=APPEND,
@@ -56,12 +61,12 @@ def record_action(
         raise RuntimeError('not specify device')
     record['current_info'] = device.app_current()
     record['time'] = time.time()
-    record['xml'] = xml
     record['description'] = description
     record['event_series'] = event_series
     record['depend'] = depend
+    record['xml'] = xml
     if action_data:
-        record['data'] = action_data
+        record['action_data'] = action_data
     if write_mode == APPEND:
         file_content['record_list'].append(record)
     elif write_mode == WRITE:

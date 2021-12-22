@@ -46,6 +46,9 @@ class Event:
         for i in kwargs:
             self.__setattr__(i, kwargs[i])
 
+    def __str__(self):
+        return 'Event action={action}, selector={selector}'.format(action=self.action, selector=self.selector)
+
 
 if __name__ == '__main__':
     # e = Event('click', text='123', location=123)
