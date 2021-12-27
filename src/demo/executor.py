@@ -21,6 +21,7 @@ class Executor:
         self.repair = repair
         self.repaired_events = []
         self.verbose = verbose
+        self.stack = []
         if self.verbose:
             executor_log_ch.setLevel(logging.DEBUG)
         else:
@@ -30,35 +31,49 @@ class Executor:
     def execute(self):
         for i in range(len(self.series)):
             record = self.series[i]
-            executor_log.info('now execute record ' + str(i))
-            executor_log.debug(record.__str__())
-            _, result = self.device.execute(record.event)
-            executor_log.info('result: {}'.format(result))
-            if result:
-                self.repaired_events.append(record.event)
-                continue
+            if record.event is not None:
+                self.direct_execute(record_index=i)
             else:
-                gui = self.device.get_ui_info()
-                events = self.repair.select(gui, record)
-                is_successful = False
-                executor_log.info('try to repair this event')
-                for event in events:
-                    executor_log.info('try event')
-                    executor_log.debug(event.__str__())
-                    gui, execute_result = self.device.execute(event)
-                    result = self.analysis.is_right_repair(execute_result, record.xml)
+                self.insert_new_event(record_index=i)
+
+    def insert_new_event(self, record_index):
+        record = self.series[record_index]
+        executor_log.info('now update record ' + str(record_index))
+        executor_log.debug(record.__str__())
+        events = self.repair.select(self.device.get_ui_info_by_package(), record)
+        for event in events:
+            executor_log.debug(event.__str__())
+            gui, execute_result = self.device.execute(event)
+            if execute_result:
+                record.event = event
+                pass
+
+    def direct_execute(self, record_index):
+        record = self.series[record_index]
+        executor_log.info('now execute record ' + str(record_index))
+        executor_log.debug(record.__str__())
+        gui, result = self.device.execute(record.event)
+        executor_log.info('result: {}'.format(result))
+        if result:
+            self.repaired_events.append(record.event)
+            self.stack.append(gui)
+        else:
+            gui = self.device.get_ui_info()
+            events = self.repair.select(gui, record)
+            is_successful = False
+            executor_log.info('try to repair this event ' + record.event.__str__())
+            for event in events:
+                executor_log.debug(event.__str__())
+                gui, execute_result = self.device.execute(event)
+                executor_log.info('result: {}'.format(execute_result))
+                if execute_result:
+                    result = self.analysis.is_same_gui(gui, record.xml)
                     if result:
                         is_successful = True
+                        self.stack.append(gui)
                         break
-                    self.device.stop_and_restart(self.series[:i])
-                if is_successful:
-                    continue
-                repair_events, now_event = self.repair.recovery(self.series, self.device, i)
-                for i in range(len(repair_events)):
-                    self.repaired_events.pop()
-                for event in repair_events:
-                    self.repaired_events.append(event)
-                self.repaired_events.append(now_event)
-
-    def insert_new_event(self):
-        pass
+                self.device.stop_and_restart(self.series[:record_index])
+            if is_successful:
+                pass
+            else:
+                exit(1)

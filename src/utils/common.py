@@ -1,9 +1,36 @@
 import os
 from pandas.plotting import table
 import matplotlib.pyplot as plt
+from utils.constant import HTML_ENTITY
 
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']  # 显示中文字体
-from .constant import HTML_ENTITY
+
+
+class FunctionWrap:
+    def __init__(self, _data, f=None, _lambda=None):
+        self.data = _data
+        if f is None:
+            self.f = None
+        else:
+            self.f = f(_lambda, _data)
+
+    def append(self, f, _lambda):
+        if self.f is None:
+            self.f = f(_lambda, self.data)
+        elif f is sorted:
+            self.f = sorted(self.f, key=_lambda)
+        else:
+            self.f = f(_lambda, self.f)
+        return self
+
+    def iter(self):
+        return self.f
+
+    def do(self):
+        if type(self.f) is not filter and type(self.f) is not map:
+            return self.f
+        else:
+            return list(self.f)
 
 
 def files(log):

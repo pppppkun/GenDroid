@@ -28,7 +28,7 @@ class Device:
     def get_ui_info_by_package(self):
         ui_info = self.u.dump_hierarchy()
         root = et.fromstring(ui_info)
-        package_node = root.find(".*[@package='" + self.package + "']")
+        package_node = et.tostring(root.find(".*[@package='" + self.package + "']")).decode('utf-8')
         return package_node
 
     def get_ui_info(self):
@@ -43,13 +43,12 @@ class Device:
                 for e in event:
                     event_action_lambda_map[e.action](self, event)
                     self.u.sleep(1)
-            return self.u.dump_hierarchy(), True
+            return self.get_ui_info_by_package(), True
         # maybe too much
         except BaseError:
-            return None, False
+            return self.get_ui_info_by_package(), False
 
     def select_widget(self, selector):
-        temp = dict()
         translate = {
             'text': 'text',
             'content-desc': 'descriptionContains',
@@ -57,8 +56,7 @@ class Device:
             'resource-id': 'resourceId',
             'class': 'className'
         }
-        for i in selector:
-            temp[translate[i]] = selector[i]
+        temp = dict(map(lambda x: (translate[x], selector[x]), selector))
         return self.u(**temp)
 
     # need a more efficiency way.

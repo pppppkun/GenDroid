@@ -4,6 +4,7 @@ this class will give confidence between query and given node
 from demo.series import Series
 from demo.device import Device
 from demo.event import event_init_map
+from utils.common import FunctionWrap
 from copy import deepcopy
 from functools import reduce
 from bert.api import predict_two_sentence
@@ -45,33 +46,6 @@ def get_node_attribute(node: et.Element):
     return d
 
 
-class FunctionWrap:
-    def __init__(self, _data, f=None, _lambda=None):
-        self.data = _data
-        if f is None:
-            self.f = None
-        else:
-            self.f = f(_lambda, _data)
-
-    def append(self, f, _lambda):
-        if self.f is None:
-            self.f = f(_lambda, self.data)
-        elif f is sorted:
-            self.f = sorted(self.f, key=_lambda)
-        else:
-            self.f = f(_lambda, self.f)
-        return self
-
-    def iter(self):
-        return self.f
-
-    def do(self):
-        if type(self.f) is not filter and type(self.f) is not map:
-            return self.f
-        else:
-            return list(self.f)
-
-
 class Repair:
     def __init__(self, strategy):
         self.strategy = strategy
@@ -93,9 +67,6 @@ class Repair:
                     _data=action_attrib_map[record.action]
                 ).iter()
             ).do()
-        ).append(
-            filter,
-            lambda _node: _node.get('package') == record.current_info['package']
         ).append(
             map,
             lambda x: confidence(x, record.description)

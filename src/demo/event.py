@@ -50,6 +50,8 @@ class Event:
         return 'Event action={action}, selector={selector}'.format(action=self.action, selector=self.selector)
 
 
+EVENT_BACK = Event(action='back')
+
 if __name__ == '__main__':
     # e = Event('click', text='123', location=123)
     # print(e.text)

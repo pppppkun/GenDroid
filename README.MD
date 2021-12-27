@@ -30,6 +30,8 @@
 - 2021.12.17
     - 关于bert的迁移，现在看来可能比我想的简单，因为tpu模块同样支持cpu和gpu，要做的是把check point搞下来，搞下来后再把config配置一下，config目前看来基本上没什么要配置的东西，因为在本机上用不到gpu，主要关注的就是model build，tpuemulate和config的build
     - 成功迁移 2021.12.18
+- 2021.12.25
+    - 在Android文档里有一些不太符合直觉的类继承关系，比如button继承于TextView，这样会让button也享有TextView享有的属性，考虑自己构建一套 
     
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具

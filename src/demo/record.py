@@ -16,9 +16,8 @@ class Record:
         self.event = event_init_map[self.action](self)
 
     def __str__(self):
-        return 'Record: action={action}, selector={selector}, description={description}'.format(action=self.action,
-                                                                                                selector=self.selector,
-                                                                                                description=self.description)
+        return 'Record: action={action}, description={description}'.format(action=self.action,
+                                                                           description=self.description)
 
 
 APPEND = 'a'
