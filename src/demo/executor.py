@@ -21,7 +21,8 @@ class Executor:
         self.repair = repair
         self.repaired_events = []
         self.verbose = verbose
-        self.stack = []
+        self.gui_stack = []
+        self.select_events_stack = []
         if self.verbose:
             executor_log_ch.setLevel(logging.DEBUG)
         else:
@@ -34,11 +35,11 @@ class Executor:
             if record.event is not None:
                 self.direct_execute(record_index=i)
             else:
-                self.insert_new_event(record_index=i)
+                self.construct_new_event(record_index=i)
 
-    def insert_new_event(self, record_index):
+    def construct_new_event(self, record_index):
         record = self.series[record_index]
-        executor_log.info('now update record ' + str(record_index))
+        executor_log.info('now construct record ' + str(record_index))
         executor_log.debug(record.__str__())
         events = self.repair.select(self.device.get_ui_info_by_package(), record)
         for event in events:
@@ -52,28 +53,26 @@ class Executor:
         record = self.series[record_index]
         executor_log.info('now execute record ' + str(record_index))
         executor_log.debug(record.__str__())
-        gui, result = self.device.execute(record.event)
-        executor_log.info('result: {}'.format(result))
-        if result:
+        gui, execute_result = self.device.execute(record.event)
+        executor_log.info('execute_result: {}'.format(execute_result))
+        if execute_result:
             self.repaired_events.append(record.event)
-            self.stack.append(gui)
+            self.gui_stack.append(gui)
         else:
-            gui = self.device.get_ui_info()
             events = self.repair.select(gui, record)
             is_successful = False
             executor_log.info('try to repair this event ' + record.event.__str__())
             for event in events:
                 executor_log.debug(event.__str__())
                 gui, execute_result = self.device.execute(event)
-                executor_log.info('result: {}'.format(execute_result))
+                executor_log.info('execute_result: {}'.format(execute_result))
                 if execute_result:
                     result = self.analysis.is_same_gui(gui, record.xml)
                     if result:
                         is_successful = True
-                        self.stack.append(gui)
+                        self.repaired_events.append(event)
+                        self.gui_stack.append(gui)
                         break
                 self.device.stop_and_restart(self.series[:record_index])
             if is_successful:
-                pass
-            else:
-                exit(1)
+                return

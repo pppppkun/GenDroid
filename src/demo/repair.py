@@ -9,14 +9,23 @@ from copy import deepcopy
 from functools import reduce
 from bert.api import predict_two_sentence
 from collections import namedtuple
+import logging
 import xml.etree.ElementTree as et
+
+repair_log = logging.getLogger('repair')
+repair_log.setLevel(logging.DEBUG)
+repair_log_ch = logging.StreamHandler()
+repair_log_ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+repair_log_ch.setFormatter(formatter)
+repair_log.addHandler(repair_log_ch)
 
 # TODO fill the map
 action_attrib_map = {
     'set_text': ['enabled', 'focusable'],
-    'click': ['clickable'],
+    'click': ['enable'],
     'check': ['checkable'],
-    'double_click': ['clickable'],
+    'double_click': ['enable'],
     'long_click': ['longClickable'],
     'swipe': [],
     'drag': [],
@@ -31,6 +40,7 @@ attributes = {
 NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
 
 
+# todo confidence and get_note_attribute is rough
 def confidence(node: et.Element, description):
     result = (
         lambda x: [predict_two_sentence(description, attribute)[0] for attribute in get_node_attribute(x).values()])(
@@ -54,26 +64,29 @@ class Repair:
     @staticmethod
     def select(gui, record):
         root = et.fromstringlist(gui)
+        repair_log.info('transfer gui and record to bert...')
         f = FunctionWrap((_node for _node in root.iter()))
         f.append(
-            filter,
-            lambda _node:
-            FunctionWrap(
-                f=reduce,
-                _lambda=lambda x, y: x and y,
-                _data=FunctionWrap(
-                    f=map,
-                    _lambda=lambda key: True if _node.get(key) == 'true' else False,
-                    _data=action_attrib_map[record.action]
-                ).iter()
-            ).do()
-        ).append(
+        #     filter,
+        #     lambda _node:
+        #     FunctionWrap(
+        #         f=reduce,
+        #         _lambda=lambda x, y: x and y,
+        #         _data=FunctionWrap(
+        #             f=map,
+        #             # todo the filter is depended on u2.dump, but the info is not accuracy
+        #             _lambda=lambda key: True if _node.get(key, None) == 'true' else False,
+        #             _data=action_attrib_map[record.action]
+        #         ).iter()
+        #     ).do()
+        # ).append(
             map,
             lambda x: confidence(x, record.description)
         ).append(
             sorted,
             lambda x: -x.confidence
         )
+        repair_log.info('filter: filter by action_map_key')
         nodes_with_confidence = f.do()
         for node_with_conf in nodes_with_confidence:
             selector = get_node_attribute(node_with_conf.node)

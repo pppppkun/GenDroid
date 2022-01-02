@@ -31,8 +31,12 @@
     - 关于bert的迁移，现在看来可能比我想的简单，因为tpu模块同样支持cpu和gpu，要做的是把check point搞下来，搞下来后再把config配置一下，config目前看来基本上没什么要配置的东西，因为在本机上用不到gpu，主要关注的就是model build，tpuemulate和config的build
     - 成功迁移 2021.12.18
 - 2021.12.25
-    - 在Android文档里有一些不太符合直觉的类继承关系，比如button继承于TextView，这样会让button也享有TextView享有的属性，考虑自己构建一套 
-    
+    - 在Android文档里有一些不太符合直觉的类继承关系，比如button继承于TextView，这样会让button也享有TextView享有的属性，考虑自己构建一套
+- 2022.1.2
+    - 目前遇到的问题是，我想要根据description生成一个event，现在event和ground truth的联系找不到，可以搜索所有界面的元素，但是不能确定到底是哪个，能用到的信息有哪些？在description中可以增加更多的描述来描述点击后的情况？
+    - 改进想法
+      - specification description [后置条件] 以gherkin的语法格式书写descriptionZZZZ
+  
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
 - [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害

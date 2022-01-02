@@ -6,14 +6,17 @@ import json
 import time
 from pyecharts import options as opts
 from pyecharts.charts import Tree
-from demo.event import event_init_map
+from demo.event import event_init_map, KEY_EVENTS
 
 
 class Record:
     def __init__(self, data):
         for i in data:
             self.__setattr__(i, data[i])
-        self.event = event_init_map[self.action](self)
+        if self.action not in KEY_EVENTS and 'selector' not in data:
+            self.event = None
+        else:
+            self.event = event_init_map[self.action](self)
 
     def __str__(self):
         return 'Record: action={action}, description={description}'.format(action=self.action,
@@ -39,10 +42,10 @@ def record_action(
         action_name,
         file_path,
         device,
-        xml,
-        event_series,
-        depend,
         description,
+        xml=None,
+        event_series=None,
+        depend=None,
         action_data=None,
         screen_shot_path=None,
         write_mode=APPEND,
