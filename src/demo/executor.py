@@ -70,7 +70,7 @@ class Executor:
                     result = self.analysis.is_same_gui(gui, record.xml)
                     if result:
                         is_successful = True
-                        self.repaired_events.append(event)
+                        self.repaired_events.append(events)
                         self.gui_stack.append(gui)
                         break
                 self.device.stop_and_restart(self.series[:record_index])

@@ -35,7 +35,10 @@
 - 2022.1.2
     - 目前遇到的问题是，我想要根据description生成一个event，现在event和ground truth的联系找不到，可以搜索所有界面的元素，但是不能确定到底是哪个，能用到的信息有哪些？在description中可以增加更多的描述来描述点击后的情况？
     - 改进想法
-      - specification description [后置条件] 以gherkin的语法格式书写descriptionZZZZ
+      - specification description [后置条件] 以gherkin的语法格式书写description, given, when, then.
+      - 假设
+        1. layout和viewgroup等页面容器不会注册listener
+        2. 不对EditText或者TextView进行click
   
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具

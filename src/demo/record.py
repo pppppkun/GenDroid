@@ -23,10 +23,6 @@ class Record:
                                                                            description=self.description)
 
 
-APPEND = 'a'
-WRITE = 'w'
-
-
 def create_record_head(author, file_path, test_script_path=None, description=None):
     head = dict()
     head['author'] = author
@@ -39,21 +35,23 @@ def create_record_head(author, file_path, test_script_path=None, description=Non
 
 
 def record_action(
-        action_name,
+        action,
         file_path,
         device,
         description,
+        given=None,
+        when=None,
+        then=None,
         xml=None,
         event_series=None,
         depend=None,
         action_data=None,
         screen_shot_path=None,
-        write_mode=APPEND,
         selector=None,
 ):
     file_content = json.load(open(file_path, 'r'))
     record = dict()
-    record['action'] = action_name
+    record['action'] = action
     if selector:
         record['selector'] = selector
     if screen_shot_path and device:
@@ -64,16 +62,18 @@ def record_action(
     record['current_info'] = device.app_current()
     record['time'] = time.time()
     record['description'] = description
+    if given:
+        record['given'] = given
+    if when:
+        record['when'] = when
+    if then:
+        record['then'] = then
     record['event_series'] = event_series
     record['depend'] = depend
     record['xml'] = xml
     if action_data:
         record['action_data'] = action_data
-    if write_mode == APPEND:
-        file_content['record_list'].append(record)
-    elif write_mode == WRITE:
-        file_content['record_list'] = []
-        file_content['record_list'].append(record)
+    file_content['record_list'].append(record)
     json.dump(file_content, open(file_path, 'w'))
 
 
