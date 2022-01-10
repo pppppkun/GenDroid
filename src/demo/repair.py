@@ -1,13 +1,12 @@
 """
 this class will give confidence between query and given node
 """
-from demo.series import Series
-from demo.device import Device
-from demo.event import event_init_map, ACTIONS
+from demo.event import event_init_map, ACTIONS, SET_ACTIONS
 from utils.common import FunctionWrap
 from copy import deepcopy
 from functools import reduce
 from sentence_transformers import SentenceTransformer, util
+import spacy
 import re
 from collections import namedtuple
 import logging
@@ -165,11 +164,20 @@ class Repair:
         return predict_function[self.predict_model](description, keys)
 
     def construct(self, gui, record):
-        description = record.description
-        actions = [action.replace('_', ' ') for action in list(ACTIONS.copy())]
-        for action in actions:
-            if action in description:
+        nlp = spacy.load('en_core_web_sm')
+        doc = nlp(record.description)
+        action = ''
+        for token in doc:
+            if token.pos_ == 'VERB':
+                action = token
                 break
+        ui_info = [child for child in action.children][0]
+        ui_info = ' '.join([child.text for child in ui_info.subtree])
+        action = \
+            sorted(
+                list(map(lambda action_: (action_, predict_use_sbert(action.text, action_.replace('_', ' '))[0]),
+                         ACTIONS)),
+                key=lambda x: -x[1])[0][0]
 
         root = et.fromstringlist(gui)
         repair_log.info('transfer gui and record to bert...')
@@ -180,7 +188,7 @@ class Repair:
         )
         f.append(
             map,
-            lambda x: self.confidence(x, record.description)
+            lambda x: self.confidence(x, ui_info)
         ).append(
             sorted,
             lambda x: -x.confidence
@@ -209,6 +217,6 @@ if __name__ == '__main__':
     # print(predict_use_sbert(description, [ui_package_id]))
     # print(predict_use_sbert(description, ['event_name']))
     # print(predict_use_sbert('click the event named test create', 'click'))
-    # print(predict_use_sbert('click the event named test create', 'long click'))
-    print(predict_use_sbert('Set the title text for the event', 'click'))
-    print(predict_use_sbert('Set the title text for the event', 'set text'))
+    # print(predict_use_sbert(description, 'enter the event title'))
+    # print(predict_use_sbert('fill', 'enter'))
+    # print(predict_use_sbert('fill', 'click'))
