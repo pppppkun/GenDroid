@@ -6,16 +6,19 @@ import json
 import time
 from pyecharts import options as opts
 from pyecharts.charts import Tree
-from demo.event import event_init_map, KEY_EVENTS
+from demo.event import event_init_map
 
 
 class Record:
     def __init__(self, data):
+        self.action = None
+        self.event = None
+        self.selector = None
+        self.action_data = None
+        self.description = None
         for i in data:
             self.__setattr__(i, data[i])
-        if self.action not in KEY_EVENTS and 'selector' not in data:
-            self.event = None
-        else:
+        if self.action:
             self.event = event_init_map[self.action](self)
 
     def __str__(self):
@@ -35,13 +38,10 @@ def create_record_head(author, file_path, test_script_path=None, description=Non
 
 
 def record_action(
-        action,
         file_path,
         device,
         description,
-        given=None,
-        when=None,
-        then=None,
+        action=None,
         xml=None,
         event_series=None,
         depend=None,
@@ -51,7 +51,8 @@ def record_action(
 ):
     file_content = json.load(open(file_path, 'r'))
     record = dict()
-    record['action'] = action
+    if action:
+        record['action'] = action
     if selector:
         record['selector'] = selector
     if screen_shot_path and device:
@@ -62,12 +63,6 @@ def record_action(
     record['current_info'] = device.app_current()
     record['time'] = time.time()
     record['description'] = description
-    if given:
-        record['given'] = given
-    if when:
-        record['when'] = when
-    if then:
-        record['then'] = then
     record['event_series'] = event_series
     record['depend'] = depend
     record['xml'] = xml
@@ -117,4 +112,5 @@ def record_visualization(record_path):
 
 
 if __name__ == '__main__':
-    record_visualization('../../benchmark/simpleCalendarPro/result.json')
+    record = Record(
+        {'description': 'fill the event title'})

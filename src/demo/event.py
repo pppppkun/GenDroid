@@ -6,6 +6,16 @@ DRAG_EVENT = 'drag_to'
 TOUCH_EVENT = 'touch'
 CHECK_CLICK_EVENT = 'check'
 
+ACTIONS = {
+    CLICK_EVENT,
+    LONG_CLICK_EVENT,
+    DOUBLE_CLICK_EVENT,
+    SET_TEXT_EVENT,
+    DRAG_EVENT,
+    TOUCH_EVENT,
+    CHECK_CLICK_EVENT
+}
+
 KEY_EVENTS = {
     'home',
     'back',

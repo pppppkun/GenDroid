@@ -32,7 +32,7 @@ class Executor:
     def execute(self):
         for i in range(len(self.series)):
             record = self.series[i]
-            if record.event is not None:
+            if record.action:
                 self.direct_execute(record_index=i)
             else:
                 self.construct_new_event(record_index=i)

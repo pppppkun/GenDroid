@@ -39,7 +39,14 @@
       - 假设
         1. layout和viewgroup等页面容器不会注册listener
         2. 不对EditText或者TextView进行click
-  
+- 2022.1.7
+    - description := {human language about a single event}
+    - must contain {action} and {a description of UI element}
+    - action很好获取，但是对ui元素对描述应该如何呢？因为我们是基于自然语言处理的，所以希望描述和街面上的元素的描述有一定的语义相似度，所以描述不能是依赖时间线来进行查询，比如如果是{the button just create}就不太好，因为现在缺少上下文的信息
+    - action的获取应该分为以下几步
+      - 首选，如果直接对应那就直接找到了
+      - 其次，如果没有直接对应，那么尝试用模型比较动词之间的相似度
+      - 比较完相似度后，根据选择出来的组件，还可以进行过滤
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
 - [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害
