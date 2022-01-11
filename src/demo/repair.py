@@ -141,7 +141,6 @@ class Repair:
             sorted,
             lambda x: -x.confidence
         )
-        repair_log.info('filter: filter by action_map_key')
         nodes_with_confidence = f.do()
         for node_with_conf in nodes_with_confidence:
             selector = get_node_attribute(node_with_conf.node)
@@ -180,7 +179,7 @@ class Repair:
                 key=lambda x: -x[1])[0][0]
 
         root = et.fromstringlist(gui)
-        repair_log.info('transfer gui and record to bert...')
+        repair_log.info('transfer gui and record to model')
         f = FunctionWrap((_node for _node in root.iter()))
         f.append(
             filter,
@@ -193,7 +192,13 @@ class Repair:
             sorted,
             lambda x: -x.confidence
         )
-
+        nodes_with_confidence = f.do()
+        for node_with_conf in nodes_with_confidence:
+            selector = get_node_attribute(node_with_conf.node)
+            _ = deepcopy(record)
+            _.selector = selector
+            _.action = action
+            yield event_init_map[_.action](_)
 
 if __name__ == '__main__':
     from demo.record import Record

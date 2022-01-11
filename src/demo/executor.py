@@ -41,13 +41,14 @@ class Executor:
         record = self.series[record_index]
         executor_log.info('now construct record ' + str(record_index))
         executor_log.debug(record.__str__())
-        events = self.repair.select(self.device.get_ui_info_by_package(), record)
+        events = self.repair.construct(self.device.get_ui_info_by_package(), record)
         for event in events:
             executor_log.debug(event.__str__())
             gui, execute_result = self.device.execute(event)
             if execute_result:
                 record.event = event
-                pass
+                self.repaired_events.append(event)
+                break
 
     def direct_execute(self, record_index):
         record = self.series[record_index]

@@ -19,6 +19,6 @@ if __name__ == '__main__':
     analysis = Analyst()
     record = json.load(open(args.test_record, 'r'))
     series = Series(record['record_list'])
-    repair = Repair(predict_model=BERT)
+    repair = Repair()
     executor = Executor(device, analysis, series, repair, args.verbose)
     executor.execute()
