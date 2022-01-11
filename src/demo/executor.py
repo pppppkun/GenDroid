@@ -1,7 +1,7 @@
 from demo.device import Device
 from demo.analyst import Analyst
 from demo.series import Series
-from demo.repair import Repair
+from demo.construct import Constructor
 import logging
 
 executor_log = logging.getLogger('executor')
@@ -14,11 +14,11 @@ executor_log.addHandler(executor_log_ch)
 
 
 class Executor:
-    def __init__(self, device: Device, analysis: Analyst, series: Series, repair: Repair, verbose):
+    def __init__(self, device: Device, analysis: Analyst, series: Series, constructor: Constructor, verbose):
         self.device = device
         self.analysis = analysis
         self.series = series
-        self.repair = repair
+        self.constructor = constructor
         self.repaired_events = []
         self.verbose = verbose
         self.gui_stack = []
@@ -41,7 +41,7 @@ class Executor:
         record = self.series[record_index]
         executor_log.info('now construct record ' + str(record_index))
         executor_log.debug(record.__str__())
-        events = self.repair.construct(self.device.get_ui_info_by_package(), record)
+        events = self.constructor.construct(self.device.get_ui_info_by_package(), record)
         for event in events:
             executor_log.debug(event.__str__())
             gui, execute_result = self.device.execute(event)
@@ -60,7 +60,7 @@ class Executor:
             self.repaired_events.append(record.event)
             self.gui_stack.append(gui)
         else:
-            events = self.repair.select(gui, record)
+            events = self.constructor.select(gui, record)
             is_successful = False
             executor_log.info('try to repair this event ' + record.event.__str__())
             for event in events:

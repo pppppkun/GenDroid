@@ -4,7 +4,7 @@ import json
 from demo.device import Device
 from demo.analyst import Analyst
 from demo.series import Series
-from demo.repair import Repair,BERT
+from demo.construct import Constructor,BERT
 from demo.executor import Executor
 
 parser = argparse.ArgumentParser(description='demo')
@@ -19,6 +19,6 @@ if __name__ == '__main__':
     analysis = Analyst()
     record = json.load(open(args.test_record, 'r'))
     series = Series(record['record_list'])
-    repair = Repair()
-    executor = Executor(device, analysis, series, repair, args.verbose)
+    constructor = Constructor()
+    executor = Executor(device, analysis, series, constructor, args.verbose)
     executor.execute()

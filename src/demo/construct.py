@@ -105,7 +105,7 @@ predict_function = {
 }
 
 
-class Repair:
+class Constructor:
     def __init__(self, select_strategy=SELECT_ALL, calculate_strategy=CALCULATE_MAX, predict_model=SBERT):
         self.select_strategy = select_strategy
         self.calculate_strategy = calculate_strategy
