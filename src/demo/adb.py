@@ -19,6 +19,3 @@ def install_grant_runtime_permissions(u: Device, data):
     if ret.exit_code != 0:
         raise RuntimeError(ret.output, ret.exit_code)
 
-
-if __name__ == '__main__':
-    output = get_all_installed_package(u2.connect())
