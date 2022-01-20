@@ -1,6 +1,10 @@
 from github import Github
+from getpass import getpass
 
-g = Github()
-repositories = g.search_repositories(query='android f-droid stars:>1000')
+passwd = getpass()
+g = Github(login_or_token='pppppkun', password=passwd)
+repositories = g.search_repositories(query='f-droid in:README stars:>100')
+repos = set()
 for repo in repositories:
-    print(repo.clone_url)
+    repos.add(repo)
+print(repos)
