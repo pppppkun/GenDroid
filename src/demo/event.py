@@ -44,7 +44,8 @@ event_init_map = {
     LONG_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
     SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.action_data['text']),
     CHECK_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
-    TOUCH_EVENT: lambda record: Event(record.action, selector=record.selector)
+    TOUCH_EVENT: lambda record: Event(record.action, selector=record.selector),
+    # DOUBLE_CLICK_EVENT: lambda record:Event(record.action, select=record.selector)
 }
 
 event_action_lambda_map = {
@@ -54,7 +55,8 @@ event_action_lambda_map = {
     SET_TEXT_EVENT: lambda device, event: device.select_widget(event.selector).set_text(event.text),
     CHECK_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
     DRAG_EVENT: lambda device, event: device.select_widget(event.selector).drag_to(event.drag, event.duration),
-    TOUCH_EVENT: lambda device, event: device.select_widget(event.selector).click()
+    TOUCH_EVENT: lambda device, event: device.select_widget(event.selector).click(),
+    # DOUBLE_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).double_click()
 }
 
 
