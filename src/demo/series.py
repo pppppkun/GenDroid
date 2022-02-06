@@ -1,10 +1,34 @@
 from demo.record import Record
 
 
-class Series:
-    def __init__(self, record_list):
+class EventSeries:
+    def __init__(self):
         self.series = []
-        self.init_series(record_list)
+
+    def __len__(self):
+        return len(self.series)
+
+    def __getitem__(self, item):
+        return self.series[item]
+
+    def is_event(self, item):
+        if type(self.series[item]) is list:
+            return False
+        else:
+            return True
+
+    def last_item_type(self):
+        return type(self.series[len(self.series) - 1])
+
+    def append(self, item):
+        self.series.append(item)
+
+
+class Series:
+    def __init__(self, record_list=None):
+        self.series = []
+        if record_list:
+            self.init_series(record_list)
 
     def __len__(self):
         return len(self.series)

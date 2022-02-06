@@ -43,7 +43,8 @@ event_init_map = {
     CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
     LONG_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
     SET_TEXT_EVENT: lambda record: Event(record.action, selector=record.selector, text=record.action_data['text']),
-    CHECK_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector)
+    CHECK_CLICK_EVENT: lambda record: Event(record.action, selector=record.selector),
+    TOUCH_EVENT: lambda record: Event(record.action, selector=record.selector)
 }
 
 event_action_lambda_map = {
@@ -52,13 +53,15 @@ event_action_lambda_map = {
     LONG_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).long_click(),
     SET_TEXT_EVENT: lambda device, event: device.select_widget(event.selector).set_text(event.text),
     CHECK_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
-    DRAG_EVENT: lambda device, event: device.select_widget(event.selector).drag_to(event.drag, event.duration)
+    DRAG_EVENT: lambda device, event: device.select_widget(event.selector).drag_to(event.drag, event.duration),
+    TOUCH_EVENT: lambda device, event: device.select_widget(event.selector).click()
 }
 
 
 class Event:
     def __init__(self, action, **kwargs):
         self.action = action
+        self.selector = None
         for i in kwargs:
             self.__setattr__(i, kwargs[i])
 

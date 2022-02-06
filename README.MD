@@ -37,7 +37,7 @@
     - 改进想法
       - specification description [后置条件] 以gherkin的语法格式书写description, given, when, then.
       - 假设
-        1. layout和viewgroup等页面容器不会注册listener
+        1. layout和view group等页面容器不会注册listener
         2. 不对EditText或者TextView进行click
 - 2022.1.7
     - description := {human language about a single event}
@@ -53,6 +53,13 @@
       - 如何集成到代码里，目前的解决方案是写一个executor，然后replay，但是我现在感觉如果不用repair的话，其实直接做出一个constructor模块会更好一点，但是直接做一个constructor模块出来，回溯又是一个问题。
       - 简单来说就是，executor方案自由度高，可以完全自己控制，但是对源代码有入侵性，constructor入侵性低，但是保存自己状态比较复杂具体实现可能要更复杂一些
       - 搞出一个数据集出来，然后在数据集上做大规模测试
+- 2022.2.3
+    - 目前希望写出来的requirement更加freestyle，进行了一波微信的requirement的调研，发现似乎并没有很大的参考价值，原因在于腾讯的requirement是基于API的，一个API可能包含了一系列的UI操作，但是目前我的工作唯一的限制刚好和她违背，我的限制是一次requirement只能执行一个动作
+    - 接下来的思路在于，即使描述更加的freestyle了，对于一个ui事件，任何描述一定至少会有一个动词来表达自己想要做的事情
+    - 需要一些形式化了
+    - $Logic Event$ is the logic description of an event which tester want to do. like "create an event item", ""
+    - 
+
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具
 - [uiautomator2](https://github.com/openatx/uiautomator2) 一个很全能的工具，可以获取元素，也可以执行一些adb命令，感觉很厉害

@@ -25,14 +25,17 @@ class Device:
         install_grant_runtime_permissions(self.u, apk_path)
         self.u.app_start(package_name=self.package, wait=True)
 
-    def get_ui_info_by_package(self):
+    def ui_info_by_package(self):
         ui_info = self.u.dump_hierarchy()
         root = et.fromstring(ui_info)
         package_node = et.tostring(root.find(".*[@package='" + self.package + "']")).decode('utf-8')
         return package_node
 
-    def get_ui_info(self):
+    def ui_info(self):
         return self.u.dump_hierarchy()
+
+    def info(self):
+        return self.u.info
 
     def execute(self, event):
         try:
@@ -43,10 +46,10 @@ class Device:
                 for e in event:
                     event_action_lambda_map[e.action](self, event)
                     self.u.sleep(1)
-            return self.get_ui_info_by_package(), True
+            return self.ui_info_by_package(), True
         # maybe too much
         except BaseError:
-            return self.get_ui_info_by_package(), False
+            return self.ui_info_by_package(), False
 
     def select_widget(self, selector):
         translate = {

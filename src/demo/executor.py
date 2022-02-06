@@ -1,6 +1,6 @@
 from demo.device import Device
 from demo.analyst import Analyst
-from demo.series import Series
+from demo.series import Series, EventSeries
 from demo.construct import Constructor
 import logging
 
@@ -21,7 +21,7 @@ class Executor:
         self.constructor = constructor
         self.verbose = verbose
         self.record_point = 0
-        self.event_stack = []
+        self.event_stack = EventSeries()
         if self.verbose:
             executor_log_ch.setLevel(logging.DEBUG)
         else:
@@ -40,7 +40,7 @@ class Executor:
     def construct_new_event(self, record):
         # executor_log.info('now construct record ' + str(record_index))
         executor_log.debug(record.__str__())
-        events = self.constructor.construct(self.device.get_ui_info_by_package(), record)
+        events = self.constructor.construct(self.device.ui_info_by_package(), record)
         while len(events) != 0:
             event = events.popleft()
             executor_log.debug('try event ' + event.__str__())
@@ -49,6 +49,16 @@ class Executor:
                 self.record_point += 1
                 self.event_stack.append([events, event])
                 break
+            else:
+                if len(events) == 0:
+                    # need to back_tracking
+                    if self.event_stack.last_item_type() is list:
+                        # back_tracking
+                        self.back_tracking()
+                    else:
+                        # can't construct
+                        executor_log.error("last execute event is implemented.")
+                        exit(-1)
 
     def direct_execute(self, record):
         executor_log.debug(record.__str__())
@@ -58,8 +68,17 @@ class Executor:
             self.record_point += 1
             self.event_stack.append(record)
         else:
-            self.back_tracking()
+            if type(self.event_stack[-1]) is list:
+                self.back_tracking()
+            else:
+                executor_log.error("continuity implemented event can only execute the last one")
+                exit(-1)
 
+    # TODO
+    # 1. the last event device successfully executed is implemented, never need to back_tracking.
+    # 2. if come from direct execute, the last event device executed must be construct event.
+    # 3. if come from construct execute
+    #   3.1 if the last execute event is implemented, -> can't construct
+    #   3.2 if the last execute event is non-implemented, -> back to it and iterator.
     def back_tracking(self):
-        events = map(lambda x: x[1] if type(x) is list else x, self.event_stack)
-        self.device.stop_and_restart(events)
+        pass
