@@ -9,7 +9,26 @@ class EventSeries:
         return len(self.series)
 
     def __getitem__(self, item):
-        return self.series[item]
+        if isinstance(item, slice):
+            start, stop, step = item.indices(len(self.series))
+            index_list = list(range(start, stop, step))
+            temp = []
+            for i in index_list:
+                temp.append(self.series[i])
+            return temp
+        else:
+            return self.series[item]
+
+    def __setitem__(self, key, value):
+        self.series[key] = value
+
+    def get_events_expect_last(self):
+        events = []
+        for event in self.series:
+            if isinstance(event, list):
+                events.append(event[1])
+            else:
+                events.append(event)
 
     def is_event(self, item):
         if type(self.series[item]) is list:

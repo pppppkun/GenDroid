@@ -81,4 +81,11 @@ class Executor:
     #   3.1 if the last execute event is implemented, -> can't construct
     #   3.2 if the last execute event is non-implemented, -> back to it and iterator.
     def back_tracking(self):
-        pass
+        self.record_point -= 1
+        expect_last_events = self.event_stack.get_events_expect_last()
+        last_event = self.event_stack[-1]
+        self.device.stop_and_restart(expect_last_events)
+        construct_events = last_event[0]
+        new_event = construct_events.popleft()
+        self.event_stack[-1] = [construct_events, new_event]
+        self.device.execute(new_event)

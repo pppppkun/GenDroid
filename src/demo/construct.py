@@ -13,13 +13,13 @@ from collections import namedtuple
 import logging
 import xml.etree.ElementTree as et
 
-repair_log = logging.getLogger('repair')
-repair_log.setLevel(logging.DEBUG)
-repair_log_ch = logging.StreamHandler()
-repair_log_ch.setLevel(logging.DEBUG)
+construct_log = logging.getLogger('construct')
+construct_log.setLevel(logging.DEBUG)
+construct_log_ch = logging.StreamHandler()
+construct_log_ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-repair_log_ch.setFormatter(formatter)
-repair_log.addHandler(repair_log_ch)
+construct_log_ch.setFormatter(formatter)
+construct_log.addHandler(construct_log_ch)
 
 attributes = {
     'text',
@@ -89,7 +89,28 @@ def average_cos(result):
 def get_action_based_classes(node: et.Element):
     class_ = node.get('class')
     class_ = class_[class_.rfind('.') + 1:]
-    return widget_attempt_action_map[class_]
+    if class_ in widget_attempt_action_map:
+        return widget_attempt_action_map[class_]
+    else:
+        return ['click']
+
+
+non_action_view = {
+    'Layout',
+    'Group',
+    'Recycle',
+    'Scroll'
+}
+
+
+def filter_by_class(node: et.Element):
+    class_ = node.get('class')
+    result = True
+    for view in non_action_view:
+        if view in class_:
+            result = False
+            break
+    return result
 
 
 SELECT_MOST_DIRECT = 'most_direct'
@@ -157,7 +178,7 @@ class Constructor:
         # ui_info = ' '.join([child.text for child in ui_info.subtree])
         ui_info = record.description
         root = et.fromstringlist(gui)
-        repair_log.info('transfer gui and record to model')
+        construct_log.info('transfer gui and record to model')
 
         def create_event(node_with_confidence):
             result = list()
@@ -166,16 +187,16 @@ class Constructor:
             _.selector = selector
             for action in get_action_based_classes(node_with_confidence.node):
                 _.action = action
+                if action == 'set_text' and not _.action_data:
+                    continue
+                # construct_log.debug(_.__str__())
                 result.append(event_init_map[_.action](_))
             return result
 
         f = FunctionWrap((_node for _node in root.iter()))
         f.append(
             filter,
-            lambda _node: not ('Layout' in _node.get('class') or
-                               'ViewGroup' in _node.get('class') or
-                               'ScrollView' in _node.get('class') or
-                               'HorizontalScrollView' in _node.get('class'))
+            lambda _node: filter_by_class(_node)
         )
         f.append(
             map,
