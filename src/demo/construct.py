@@ -1,7 +1,7 @@
 """
 this class will give confidence between query and given node
 """
-from demo.event import event_init_map, ACTIONS, SET_ACTIONS
+from demo.event import event_init_map
 from utils.common import FunctionWrap
 from copy import deepcopy
 from collections import deque
@@ -112,6 +112,8 @@ non_action_view = {
 
 def filter_by_class(node: et.Element):
     class_ = node.get('class')
+    if class_ is None:
+        return False
     result = True
     for view in non_action_view:
         if view in class_:
@@ -195,9 +197,12 @@ class Constructor:
             for action in get_action_based_classes(node_with_confidence.node):
                 _.action = action
                 if action == 'set_text' and not _.action_data:
-                    continue
+                    # continue
+                    _.action_data = 'place holder'
                 # construct_log.debug(_.__str__())
-                result.append(event_init_map[_.action](_))
+                e = event_init_map[_.action](_)
+                e.confidence = node_with_confidence.confidence
+                result.append(e)
             return result
 
         f = FunctionWrap((_node for _node in root.iter()))
@@ -233,12 +238,7 @@ if __name__ == '__main__':
     # events = repair.construct(gui, record)
     # for event in events:
     #     print(event)
-    print(predict_use_sbert('confirm', ['YES']))
-    print(predict_use_sbert('confirm', ['NO']))
-    print(predict_use_sbert('confirm', 'Are you sure you want to proceed with the deletion?'))
-    # print(predict_use_sbert('fill the title of event', 'event title'))
-    # print(predict_use_sbert('fill the title of event', 'event_title'))
-    # print(predict_use_sbert('fill the title of event', 'title'))
-    # print(predict_use_sbert('fill the title of event', 'new event'))
-    # print(predict_use_sbert('fill the title of event', 'event description'))
-    # print(predict_use_sbert('fill the title of event', 'location'))
+    print(predict_use_sbert('to end of the screen', 'swipe'))
+    print(predict_use_sbert('to end of the screen', 'swipe down'))
+    print(predict_use_sbert('to end of the screen', 'scroll down'))
+    print(predict_use_sbert('swipe', 'scroll'))

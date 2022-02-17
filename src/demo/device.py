@@ -41,15 +41,15 @@ class Device:
         try:
             if type(event) == Event:
                 event_action_lambda_map[event.action](self, event)
-                self.u.sleep(1)
+                self.u.sleep(2)
             elif type(event) == list:
                 for e in event:
                     event_action_lambda_map[e.action](self, event)
-                    self.u.sleep(1)
-            return self.ui_info_by_package(), True
+                    self.u.sleep(2)
+            return self.ui_info(), True
         # maybe too much
         except BaseError:
-            return self.ui_info_by_package(), False
+            return self.ui_info(), False
 
     def select_widget(self, selector):
         translate = {

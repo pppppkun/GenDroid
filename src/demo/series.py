@@ -41,6 +41,7 @@ class EventSeries:
 
     def append(self, item):
         self.series.append(item)
+        return self
 
 
 class Series:
