@@ -79,7 +79,10 @@ def get_node_attribute_values(node: et.Element):
     text = node.get('text')
     content_desc = node.get('content-desc')
     if node.get('resource-id') != '':
-        resource_id = resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_', ' ')
+        if resource_id_pattern.match(node.get('resource-id')) is None:
+            resource_id = ''
+        else:
+            resource_id = resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_', ' ')
     else:
         resource_id = ''
     result = [text, content_desc, resource_id]
@@ -200,7 +203,10 @@ class Constructor:
                     # continue
                     _.action_data = 'place holder'
                 # construct_log.debug(_.__str__())
-                e = event_init_map[_.action](_)
+                try:
+                    e = event_init_map[_.action](_)
+                except:
+                    continue
                 e.confidence = node_with_confidence.confidence
                 result.append(e)
             return result

@@ -58,7 +58,12 @@
     - 接下来的思路在于，即使描述更加的freestyle了，对于一个ui事件，任何描述一定至少会有一个动词来表达自己想要做的事情
     - 需要一些形式化了
     - $Logic Event$ is the logic description of an event which tester want to do. like "create an event item", ""
-    - 
+- 2022.2.24 
+    - 前面的工作有用，效果还可以，但是太简单，太直观了
+    - 改进1. fine-tune
+    - 改进2. 一个描述对应多个事件
+        - 想法1. 利用LSTM和attention做一个description2events模型
+        - 想法2. 
 
 ### tools
 - [androguard](https://github.com/androguard/androguard)  一个安卓逆向的工具

@@ -28,7 +28,10 @@ class Device:
     def ui_info_by_package(self):
         ui_info = self.u.dump_hierarchy()
         root = et.fromstring(ui_info)
-        package_node = et.tostring(root.find(".*[@package='" + self.package + "']")).decode('utf-8')
+        try:
+            package_node = et.tostring(root.find(".*[@package='" + self.package + "']")).decode('utf-8')
+        except:
+            package_node = ui_info
         return package_node
 
     def ui_info(self):
@@ -46,6 +49,8 @@ class Device:
                 for e in event:
                     event_action_lambda_map[e.action](self, event)
                     self.u.sleep(2)
+            if self.u.info['currentPackageName'] != self.package:
+                return self.ui_info(), False
             return self.ui_info(), True
         # maybe too much
         except BaseError:
@@ -72,6 +77,7 @@ class Device:
         if events:
             for event in events:
                 event_action_lambda_map[event.action](self, event)
+                self.u.sleep(2)
 
 
 if __name__ == '__main__':

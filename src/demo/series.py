@@ -23,12 +23,20 @@ class EventSeries:
         self.series[key] = value
 
     def get_events_expect_last(self):
+        events = self.get_events()
+        if len(events) == 1:
+            return events
+        else:
+            return events[:-1]
+
+    def get_events(self):
         events = []
         for event in self.series:
             if isinstance(event, list):
                 events.append(event[1])
             else:
                 events.append(event)
+        return events
 
     def is_event(self, item):
         if type(self.series[item]) is list:

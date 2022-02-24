@@ -59,6 +59,9 @@ class Executor:
                         # can't construct
                         executor_log.error("last execute event is implemented.")
                         exit(-1)
+                else:
+                    expect_last_events = self.event_stack.get_events()
+                    self.device.stop_and_restart(expect_last_events)
 
     def direct_execute(self, record):
         executor_log.debug(record.__str__())
