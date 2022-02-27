@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as et
-import androguard
 import logging
 from functools import reduce
+from androguard.core.analysis.analysis import Analysis
 
 analyst_log = logging.getLogger('analyst')
 analyst_log.setLevel(logging.DEBUG)
@@ -11,5 +11,9 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 analyst_log_ch.setFormatter(formatter)
 analyst_log.addHandler(analyst_log_ch)
 
-if __name__ == '__main__':
-    print(1)
+class Analyst:
+    pass
+
+# if __name__ == '__main__':
+#     analysis = Analysis()
+#     analysis.add()

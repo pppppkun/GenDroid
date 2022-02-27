@@ -26,50 +26,38 @@ class Record:
                                                                            description=self.description)
 
 
-def create_record_head(author, file_path, test_script_path=None, description=None):
-    head = dict()
-    head['author'] = author
-    if test_script_path:
-        head['test_script_path'] = test_script_path
-    if description:
-        head['description'] = description
-    head['record_list'] = []
-    json.dump(head, open(file_path, 'w'), ensure_ascii=False)
+def create_record():
+    records = {'d2e': []}
+    f = open('record.json', 'w')
+    json.dump(records, f)
+    f.close()
 
 
-def record_action(
-        file_path,
-        device,
+def record_events(
         description,
-        action=None,
-        xml=None,
-        event_series=None,
-        depend=None,
-        action_data=None,
-        screen_shot_path=None,
-        selector=None,
+        event_series,
+        widgets,
+        pre_device_info,
+        post_device_info,
+        pre_screenshot,
+        post_screenshot
 ):
-    file_content = json.load(open(file_path, 'r'))
-    record = dict()
-    if action:
-        record['action'] = action
-    if selector:
-        record['selector'] = selector
-    if screen_shot_path and device:
-        device.screenshot(screen_shot_path)
-        record['screen_shot_path'] = screen_shot_path
-    if screen_shot_path and not device:
-        raise RuntimeError('not specify device')
-    record['current_info'] = device.app_current()
-    record['time'] = time.time()
-    record['description'] = description
-    record['event_series'] = event_series
-    record['depend'] = depend
-    record['xml'] = xml
-    if action_data:
-        record['action_data'] = action_data
-    file_content['record_list'].append(record)
-    json.dump(file_content, open(file_path, 'w'))
+    d = dict()
+    d['description'] = description
+    d['event_series'] = event_series
+    d['widgets'] = widgets
+    d['pre_device_info'] = pre_device_info
+    d['post_device_info'] = post_device_info
+    d['pre_screenshot'] = pre_screenshot
+    d['post_screenshot'] = post_screenshot
+
+    f = open('record.json', 'r')
+    records = json.load(f)
+    f.close()
+    records['d2e'].append(d)
+    f = open('record.json', 'w')
+    json.dump(records, f)
+    f.close()
 
 
 def create_tree(record_content):

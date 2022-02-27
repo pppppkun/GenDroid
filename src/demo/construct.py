@@ -7,7 +7,6 @@ from copy import deepcopy
 from collections import deque
 from sentence_transformers import SentenceTransformer, util
 from functools import reduce
-import spacy
 import re
 from collections import namedtuple
 import logging
@@ -51,7 +50,7 @@ def predict_use_sbert(description, keys):
 
 
 def predict_use_bert(description, keys):
-    from bert.api import predict_two_sentence
+    from model.api import predict_two_sentence
     manhattan_sim = [predict_two_sentence(description, key)[0] for key in keys]
     manhattan_sim.sort(key=lambda x: -x)
     return manhattan_sim
@@ -130,7 +129,7 @@ SELECT_ALL = 'all'
 CALCULATE_MAX = 'max'
 CALCULATE_AVERAGE = 'average'
 SBERT = 'sbert'
-BERT = 'bert'
+BERT = 'model'
 select_function = {
     SELECT_MOST_DIRECT: get_most_important_attribute,
     SELECT_ALL: get_node_attribute_values

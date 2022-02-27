@@ -1,7 +1,7 @@
 import json
 import os
 import requests
-import bert.tokenization as tokenization
+import model.tokenization as tokenization
 
 endpoints = "http://localhost:8501/v1/models/bert:predict"
 headers = {"content-type": "application-json"}
