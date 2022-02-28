@@ -99,6 +99,39 @@ def record_visualization(record_path):
     )
 
 
+def get_info_and_screenshot(device):
+    import os
+    return device.u.app_current(), device.u.screenshot(os.path.join('img', str(int(time.time())) + '.jpg'))
+
+
+def build_event(selector, action, action_data=None):
+    e = {'selector': selector, 'action': action}
+    if action_data:
+        e['action_data'] = action_data
+    return e
+
+
+def execute(description, events, device, executor):
+    pre_info, pre_screenshot = get_info_and_screenshot()
+    device.u.sleep(2)
+    widgets = []
+    for event in events:
+        record = Record(event)
+        widgets.append(device.select_widget(event['selector']).info)
+        executor.direct_execute(record)
+    device.u.sleep(2)
+    post_info, post_screenshot = get_info_and_screenshot()
+    record_events(
+        description=description,
+        event_series=events,
+        widgets=widgets,
+        pre_screenshot=pre_screenshot,
+        pre_device_info=pre_info,
+        post_screenshot=post_screenshot,
+        post_device_info=post_info
+    )
+
+
 if __name__ == '__main__':
     record = Record(
         {'description': 'fill the event title'})

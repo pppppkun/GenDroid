@@ -2,9 +2,9 @@ import json
 import os
 import xml.etree.ElementTree as et
 from abc import abstractmethod
-
+from utils.constant import FINE_TUNE_CALENDAR
 import pandas as pd
-
+import csv
 from utils.common import files
 from utils.constant import NEW_LOG
 
@@ -245,10 +245,47 @@ def build_data_set(log, count=None):
     return data_set
 
 
+def event2seq(event_series, widgets):
+    action_map_dict = {
+        'click': 'click the',
+        'set_text': 'fill the',
+    }
+    selector_map_dict = {
+        'index': 'index',
+        'text': 'text',
+        'content-desc': 'content description',
+    }
+    sentence2 = list()
+    for event_with_widget in list(zip(event_series, widgets)):
+        event, widget = event_with_widget[0], event_with_widget[1]
+        # print(event)
+        class_ = widget['className']
+        class_ = class_[class_.rfind('.') + 1:]
+        action = event['action']
+        selector = event['selector']
+        key = list(selector.keys())[0]
+        key_ = selector_map_dict[key]
+        sentence2.append(action_map_dict[action] + ' ' + class_ + ' which ' + key_ + ' is ' + str(selector[key]))
+    return '. '.join(sentence2)
+
+
+def from_demo_record_to_csv(path):
+    f = open(path)
+    records = json.load(f)['d2e']
+    with open(FINE_TUNE_CALENDAR, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['sentence1', 'sentence2', 'score', 'split'])
+        rows = list()
+        for record in records:
+            rows.append((record['description'], event2seq(record['event_series'], record['widgets']), 5, 'train'))
+        writer.writerows(rows)
+
+
 if __name__ == '__main__':
     # new_train data build
-    new_log_data_set = build_data_set(NEW_LOG, 10)
+    # new_log_data_set = build_data_set(NEW_LOG, 10)
     # old_log_data_set = build_data_set(OLD_LOG)
     # data_set = new_log_data_set.union(old_log_data_set)
-    print(new_log_data_set.head())
+    # print(new_log_data_set.head())
+    from_demo_record_to_csv('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/simpleCalendarPro/record.json')
     pass

@@ -10,7 +10,7 @@ ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 DATA = os.path.join(ROOT_PATH, '..', 'data')
 DATA_SET = os.path.join(DATA, 'data_set')
 EVAL = os.path.join(DATA, 'eval')
-
+FINE_TUNE_CALENDAR = os.path.join(DATA_SET, 'fine_tune', 'calendar', 'data.csv')
 ORIGIN_TRAIN = os.path.join(DATA_SET, 'origin_train.tsv')
 ORIGIN_TEST = os.path.join(DATA_SET, 'origin_test.tsv')
 HYBRID_TRAIN = os.path.join(DATA_SET, 'hybrid_train.tsv')

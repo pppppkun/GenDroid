@@ -21,4 +21,4 @@ if __name__ == '__main__':
     series = Series(record['record_list'])
     constructor = Constructor()
     executor = Executor(device, analysis, series, constructor, args.verbose)
-    executor.execute()
+    # executor.execute()

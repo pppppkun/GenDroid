@@ -28,14 +28,14 @@ class Executor:
             executor_log_ch.setLevel(logging.INFO)
         pass
 
-    def execute(self):
-        while self.record_point < len(self.series):
-            record = self.series[self.record_point]
-            executor_log.info('now construct record ' + str(self.record_point))
-            if record.event:
-                self.direct_execute(record)
-            else:
-                self.construct_new_event(record)
+    # def execute(self):
+    #     while self.record_point < len(self.series):
+    #         record = self.series[self.record_point]
+    #         executor_log.info('now construct record ' + str(self.record_point))
+    #         if record.event:
+    #             self.direct_execute(record)
+    #         else:
+    #             self.construct_new_event(record)
 
     def construct_new_event(self, record):
         # executor_log.info('now construct record ' + str(record_index))
@@ -92,3 +92,6 @@ class Executor:
         new_event = construct_events.popleft()
         self.event_stack[-1] = [construct_events, new_event]
         self.device.execute(new_event)
+
+    def to_scripts(self):
+        pass

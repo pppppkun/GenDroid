@@ -12,8 +12,14 @@ analyst_log_ch.setFormatter(formatter)
 analyst_log.addHandler(analyst_log_ch)
 
 class Analyst:
-    pass
+    def gui_analysis(self, gui):
+        pass
 
+    def description_analysis(self, description):
+        pass
+
+    def analysis(self):
+        pass
 # if __name__ == '__main__':
 #     analysis = Analysis()
 #     analysis.add()

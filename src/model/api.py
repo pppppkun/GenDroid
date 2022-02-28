@@ -43,5 +43,6 @@ def predict_two_sentence(seq1, seq2):
 
 
 if __name__ == '__main__':
-    predict_two_sentence("submit payment password authorize payment verify transaction failure",
-                         "Change remaining 99998 95")
+    # predict_two_sentence("submit payment password authorize payment verify transaction failure",
+    #                      "Change remaining 99998 95")
+    print(os.getcwd())
