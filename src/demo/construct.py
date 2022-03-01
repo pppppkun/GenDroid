@@ -1,7 +1,7 @@
 """
 this class will give confidence between query and given node
 """
-from demo.event import event_init_map
+from demo.event import event_factory, VirtualEvent, EventData
 from utils.common import FunctionWrap
 from copy import deepcopy
 from collections import deque
@@ -81,7 +81,8 @@ def get_node_attribute_values(node: et.Element):
         if resource_id_pattern.match(node.get('resource-id')) is None:
             resource_id = ''
         else:
-            resource_id = resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_', ' ')
+            resource_id = resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_',
+                                                                                                                ' ')
     else:
         resource_id = ''
     result = [text, content_desc, resource_id]
@@ -166,7 +167,7 @@ class Constructor:
         return predict_function[self.predict_model](description, keys)
 
     # TODO more freestyle description
-    def construct(self, gui, record):
+    def construct(self, gui, v_event: VirtualEvent):
         # nlp = spacy.load('en_core_web_sm')
         # doc = nlp(record.description)
         # action = ''
@@ -187,24 +188,23 @@ class Constructor:
         #
         # ui_info = [child for child in action.children][0]
         # ui_info = ' '.join([child.text for child in ui_info.subtree])
-        ui_info = record.description
+        ui_info = v_event.description
         root = et.fromstringlist(gui)
         construct_log.info('transfer gui and record to model')
 
-        def create_event(node_with_confidence):
+        def create_event(node_with_confidence, data=None):
             result = list()
             selector = get_node_attribute(node_with_confidence.node)
-            _ = deepcopy(record)
-            _.selector = selector
+            # action should study from history (ie same widget have same action, new widget should consider the
+            # static analysis result)
             for action in get_action_based_classes(node_with_confidence.node):
-                _.action = action
-                if action == 'set_text' and not _.action_data:
-                    # continue
-                    _.action_data = 'place holder'
-                # construct_log.debug(_.__str__())
+                if action == 'set_text' and data is None:
+                    data = 'place holder'
+                event_data = EventData(action=action, selector=selector, data=data)
                 try:
-                    e = event_init_map[_.action](_)
+                    e = event_factory[action](event_data)
                 except:
+                    construct_log.error(action, selector, data)
                     continue
                 e.confidence = node_with_confidence.confidence
                 result.append(e)
@@ -223,7 +223,7 @@ class Constructor:
             lambda x: -x.confidence
         ).append(
             map,
-            lambda x: create_event(x)
+            lambda x: create_event(x, v_event.data)
         ).append(
             reduce,
             lambda x, y: x + y

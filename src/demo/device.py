@@ -3,7 +3,7 @@ import uiautomator2 as u2
 from uiautomator2.exceptions import BaseError
 from demo.adb import install_grant_runtime_permissions, get_all_installed_package
 from androguard.core.bytecodes.apk import APK
-from demo.event import event_action_lambda_map, Event
+from demo.event import send_event_to_device, Event
 
 
 class EventError(RuntimeError):
@@ -34,7 +34,7 @@ class Device:
             package_node = ui_info
         return package_node
 
-    def ui_info(self):
+    def get_gui(self):
         return self.u.dump_hierarchy()
 
     def info(self):
@@ -43,18 +43,17 @@ class Device:
     def execute(self, event):
         try:
             if type(event) == Event:
-                event_action_lambda_map[event.action](self, event)
+                send_event_to_device[event.action](self, event)
                 self.u.sleep(2)
             elif type(event) == list:
                 for e in event:
-                    event_action_lambda_map[e.action](self, event)
+                    send_event_to_device[e.action](self, event)
                     self.u.sleep(2)
             if self.u.info['currentPackageName'] != self.package:
-                return self.ui_info(), False
-            return self.ui_info(), True
-        # maybe too much
+                return self.get_gui(), False
+            return self.get_gui(), True
         except BaseError:
-            return self.ui_info(), False
+            return self.get_gui(), False
 
     def select_widget(self, selector):
         translate = {
@@ -76,10 +75,12 @@ class Device:
         self.u.app_start(self.package)
         if events:
             for event in events:
-                event_action_lambda_map[event.action](self, event)
+                send_event_to_device[event.action](self, event)
                 self.u.sleep(2)
 
 
 if __name__ == '__main__':
-    d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro7.apk')
+    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
     # app_node = d.get_ui_info_by_package()
+    d = u2.connect()
+    # d.info

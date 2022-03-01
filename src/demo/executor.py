@@ -1,6 +1,6 @@
 from demo.device import Device
 from demo.analyst import Analyst
-from demo.series import Series, EventSeries
+from demo.series import EventSeries
 from demo.construct import Constructor
 import logging
 
@@ -28,19 +28,10 @@ class Executor:
             executor_log_ch.setLevel(logging.INFO)
         pass
 
-    # def execute(self):
-    #     while self.record_point < len(self.series):
-    #         record = self.series[self.record_point]
-    #         executor_log.info('now construct record ' + str(self.record_point))
-    #         if record.event:
-    #             self.direct_execute(record)
-    #         else:
-    #             self.construct_new_event(record)
-
-    def construct_new_event(self, record):
-        # executor_log.info('now construct record ' + str(record_index))
-        executor_log.debug(record.__str__())
-        events = self.constructor.construct(self.device.ui_info(), record)
+    def construct_new_event(self, description):
+        # executor_log.info('now construct description ' + str(description_index))
+        executor_log.debug(description.__str__())
+        events = self.constructor.construct(self.device.get_gui(), description)
         while len(events) != 0:
             event = events.popleft()
             executor_log.debug('try event ' + event.__str__())
@@ -63,13 +54,12 @@ class Executor:
                     expect_last_events = self.event_stack.get_events()
                     self.device.stop_and_restart(expect_last_events)
 
-    def direct_execute(self, record):
-        executor_log.debug(record.__str__())
-        gui, execute_result = self.device.execute(record.event)
+    def direct_execute(self, event):
+        gui, execute_result = self.device.execute(event)
         executor_log.info('execute_result: {}'.format(execute_result))
         if execute_result:
             self.record_point += 1
-            self.event_stack.append(record)
+            self.event_stack.append(event)
         else:
             if type(self.event_stack[-1]) is list:
                 self.back_tracking()

@@ -11,11 +11,18 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 analyst_log_ch.setFormatter(formatter)
 analyst_log.addHandler(analyst_log_ch)
 
+
 class Analyst:
     def gui_analysis(self, gui):
         pass
 
     def description_analysis(self, description):
+        pass
+
+    def event_analysis(self):
+        pass
+
+    def action_analysis(self):
         pass
 
     def analysis(self):

@@ -3,27 +3,8 @@ this class need to record some information when execute something such as start 
 change
 """
 import json
-import time
 from pyecharts import options as opts
 from pyecharts.charts import Tree
-from demo.event import event_init_map
-
-
-class Record:
-    def __init__(self, data):
-        self.action = None
-        self.event = None
-        self.selector = None
-        self.action_data = None
-        self.description = None
-        for i in data:
-            self.__setattr__(i, data[i])
-        if self.action:
-            self.event = event_init_map[self.action](self)
-
-    def __str__(self):
-        return 'Record: action={action}, description={description}'.format(action=self.action,
-                                                                           description=self.description)
 
 
 def create_record():
@@ -97,41 +78,3 @@ def record_visualization(record_path):
             .set_series_opts(label_opts=opts.LabelOpts(font_size=16))
             .render("tree_top_bottom.html")
     )
-
-
-def get_info_and_screenshot(device):
-    import os
-    return device.u.app_current(), device.u.screenshot(os.path.join('img', str(int(time.time())) + '.jpg'))
-
-
-def build_event(selector, action, action_data=None):
-    e = {'selector': selector, 'action': action}
-    if action_data:
-        e['action_data'] = action_data
-    return e
-
-
-def execute(description, events, device, executor):
-    pre_info, pre_screenshot = get_info_and_screenshot()
-    device.u.sleep(2)
-    widgets = []
-    for event in events:
-        record = Record(event)
-        widgets.append(device.select_widget(event['selector']).info)
-        executor.direct_execute(record)
-    device.u.sleep(2)
-    post_info, post_screenshot = get_info_and_screenshot()
-    record_events(
-        description=description,
-        event_series=events,
-        widgets=widgets,
-        pre_screenshot=pre_screenshot,
-        pre_device_info=pre_info,
-        post_screenshot=post_screenshot,
-        post_device_info=post_info
-    )
-
-
-if __name__ == '__main__':
-    record = Record(
-        {'description': 'fill the event title'})
