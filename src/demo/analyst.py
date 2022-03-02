@@ -1,7 +1,8 @@
 import xml.etree.ElementTree as et
 import logging
+import demo.db as db
+import demo.utils as utils
 from functools import reduce
-from androguard.core.analysis.analysis import Analysis
 
 analyst_log = logging.getLogger('analyst')
 analyst_log.setLevel(logging.DEBUG)
@@ -11,9 +12,21 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 analyst_log_ch.setFormatter(formatter)
 analyst_log.addHandler(analyst_log_ch)
 
+widget_attempt_action_map = {
+    'ImageView': ['click'],
+    'EditText': ['set_text'],
+    'TextView': ['click'],
+    'Button': ['click'],
+    'ImageButton': ['click'],
+    'CheckBox': ['click']
+}
+
 
 class Analyst:
     def gui_analysis(self, gui):
+        for history_gui in db.guis:
+            if history_gui.pre == gui:
+                pass
         pass
 
     def description_analysis(self, description):
@@ -22,11 +35,31 @@ class Analyst:
     def event_analysis(self):
         pass
 
-    def action_analysis(self):
+    def action_analysis(self, widget):
+        events = db.get_all_events()
+        for event in events:
+            r = utils.is_same_widget_from_widget_info(widget, event.widget)
+            if r:
+                return event.action
+
+        d = dict()
+        for event in events:
+            class_ = utils.get_class(event.widget)
+            d.setdefault(class_, dict())
+            d[class_].setdefault(event.action, 0)
+            d[class_][event.action] += 1
+
+        class_ = utils.get_class(widget)
+        if class_ in d:
+            actions = d[class_]
+            action = max(zip(actions.values(), actions.keys()))[0]
+            return action
+
+        return widget_attempt_action_map[class_]
+
+    # static analysis to get action is better!
+    def analysis(self, apk):
         pass
 
-    def analysis(self):
-        pass
-# if __name__ == '__main__':
-#     analysis = Analysis()
-#     analysis.add()
+
+analyst = Analyst()

@@ -10,9 +10,8 @@ from sentence_transformers import SentenceTransformer, LoggingHandler, losses, u
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 import logging
 from datetime import datetime
-import os
-import gzip
 import csv
+from utils.constant import FINE_TUNE_CALENDAR
 
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -20,10 +19,10 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
                     handlers=[LoggingHandler()])
 
 # Check if dataset exsist. If not, download and extract  it
-sts_dataset_path = 'datasets/stsbenchmark.tsv.gz'
-
-if not os.path.exists(sts_dataset_path):
-    util.http_get('https://sbert.net/datasets/stsbenchmark.tsv.gz', sts_dataset_path)
+# sts_dataset_path = 'datasets/stsbenchmark.tsv.gz'
+#
+# if not os.path.exists(sts_dataset_path):
+#     util.http_get('https://sbert.net/datasets/stsbenchmark.tsv.gz', sts_dataset_path)
 
 # Read the dataset
 model_name = 'all-MiniLM-L6-v2'
@@ -41,18 +40,19 @@ logging.info("Read train dataset")
 train_samples = []
 dev_samples = []
 test_samples = []
-with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
-    reader = csv.DictReader(fIn, delimiter='\t', quoting=csv.QUOTE_NONE)
-    for row in reader:
-        score = float(row['score']) / 5.0  # Normalize score to range 0 ... 1
-        inp_example = InputExample(texts=[row['sentence1'], row['sentence2']], label=score)
+# with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
 
-        if row['split'] == 'dev':
-            dev_samples.append(inp_example)
-        elif row['split'] == 'test':
-            test_samples.append(inp_example)
-        else:
-            train_samples.append(inp_example)
+reader = csv.DictReader(FINE_TUNE_CALENDAR)
+for row in reader:
+    score = float(row['score']) / 5.0  # Normalize score to range 0 ... 1
+    inp_example = InputExample(texts=[row['sentence1'], row['sentence2']], label=score)
+
+    if row['split'] == 'dev':
+        dev_samples.append(inp_example)
+    elif row['split'] == 'test':
+        test_samples.append(inp_example)
+    else:
+        train_samples.append(inp_example)
 
 train_dataloader = DataLoader(train_samples, shuffle=True, batch_size=train_batch_size)
 train_loss = losses.CosineSimilarityLoss(model=model)

@@ -3,6 +3,7 @@ this class need to record some information when execute something such as start 
 change
 """
 import json
+from demo.db import insert_record
 from pyecharts import options as opts
 from pyecharts.charts import Tree
 
@@ -31,7 +32,7 @@ def record_events(
     d['post_device_info'] = post_device_info
     d['pre_screenshot'] = pre_screenshot
     d['post_screenshot'] = post_screenshot
-
+    insert_record(record=d)
     f = open('record.json', 'r')
     records = json.load(f)
     f.close()
