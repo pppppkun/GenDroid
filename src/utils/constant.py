@@ -25,6 +25,8 @@ PREDICT = os.path.join(DATA, 'predict.json')
 NEW_LOG = os.path.join(DATA, 'new_test_log')
 OLD_LOG = os.path.join(DATA, 'old_test_log')
 
+
+
 HTML_ENTITY = {
     '&quot;': '\"',
     '&#39;': '\''
