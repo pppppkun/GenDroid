@@ -1,8 +1,7 @@
 import os
 import json
-from utils.constant import DATA, DATA_SET, EVAL, HYBRID_TRAIN, ORIGIN_TRAIN, OLD_LOG, PREDICT_TRUE, PREDICT, \
-    PREDICT_FALSE, NEW_LOG
-from model.json_processor import DataSetBuild
+from utils.constant import EVAL, OLD_LOG, PREDICT_FALSE, NEW_LOG
+from model.bert.json_processor import DataSetBuild
 from utils.common import files
 import pandas as pd
 from collections import defaultdict

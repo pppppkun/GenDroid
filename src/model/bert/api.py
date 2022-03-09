@@ -1,13 +1,13 @@
 import json
 import os
 import requests
-import model.tokenization as tokenization
+import model.bert.tokenization as tokenization
 
 endpoints = "http://localhost:8501/v1/models/bert:predict"
 headers = {"content-type": "application-json"}
 example = "This is the input string"
 tokenizer = tokenization.FullTokenizer(
-    vocab_file="/Users/pkun/PycharmProjects/ui_api_automated_test/output_model/1639756188/assets/vocab.txt",
+    vocab_file="/output_model/1639756188/assets/vocab.txt",
     do_lower_case=True)
 CLS = "[CLS]"
 SEP = "[SEP]"

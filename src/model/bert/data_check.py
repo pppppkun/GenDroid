@@ -1,6 +1,6 @@
 import json
 import os
-from utils.constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_TRAIN, VERSION_TRAIN, HTML_ENTIRY
+from utils.constant import DATA, NEW_LOG, OLD_LOG, ORIGIN_TRAIN, VERSION_TRAIN
 from utils.common import files
 
 
@@ -122,21 +122,22 @@ def compare_data_set(f1, f2):
             result[i][j] = sorted(list(result[i][j]))
     json.dump(result, open('temp.json', 'w'), ensure_ascii=False, indent=4, sort_keys=True)
 
-def translate_html_to_ascii(data_set_path):
-    data_set = open(data_set_path, 'r').read().split('\n')
-    result = []
-    for i in data_set:
-        temp = i
-        for key in HTML_ENTIRY:
-            if key in temp:
-                temp = temp.replace(key, HTML_ENTIRY[key])
-        result.append(temp)
-    f = open('change_data_set.txt', 'w')
-    f.write('\n'.join(result))
+# def translate_html_to_ascii(data_set_path):
+#     data_set = open(data_set_path, 'r').read().split('\n')
+#     result = []
+#     for i in data_set:
+#         temp = i
+#         for key in HTML_ENTIRY:
+#             if key in temp:
+#                 temp = temp.replace(key, HTML_ENTIRY[key])
+#         result.append(temp)
+#     f = open('change_data_set.txt', 'w')
+#     f.write('\n'.join(result))
 
 
 if __name__ == '__main__':
     # compare_from_trace()
     # check_false()
-    translate_html_to_ascii('data/data_set/version_data_set.tsv')
+    # translate_html_to_ascii('data/data_set/version_data_set.tsv')
     # compare_data_set('change_data_set.txt', 'data/data_set/origin_data_set.tsv')
+    pass

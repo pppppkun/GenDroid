@@ -34,7 +34,7 @@ class MyTaskProcessor(DataProcessor):
                 #exit()
 
             guid = "%s-%s" % (set_type, i)
-            text_a = tokenization.convert_to_unicode(line[1].replace("_"," "))
+            text_a = tokenization.convert_to_unicode(line[1].replace("_", " "))
             text_b = tokenization.convert_to_unicode(line[2])
             label = tokenization.convert_to_unicode(line[0])
             examples.append(

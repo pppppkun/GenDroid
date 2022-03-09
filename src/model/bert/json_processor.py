@@ -311,5 +311,5 @@ if __name__ == '__main__':
     # old_log_data_set = build_data_set(OLD_LOG)
     # data_set = new_log_data_set.union(old_log_data_set)
     # print(new_log_data_set.head())
-    from_demo_record_to_csv('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/simpleCalendarPro/record.json')
+    from_demo_record_to_csv('/benchmark/simpleCalendarPro/record.json')
     pass
