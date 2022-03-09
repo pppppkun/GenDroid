@@ -266,19 +266,43 @@ def event2seq(event_series, widgets):
         key = list(selector.keys())[0]
         key_ = selector_map_dict[key]
         sentence2.append(action_map_dict[action] + ' ' + class_ + ' which ' + key_ + ' is ' + str(selector[key]))
+
     return '. '.join(sentence2)
 
 
 def from_demo_record_to_csv(path):
     f = open(path)
     records = json.load(f)['d2e']
+    import numpy as np
+    idxs = np.random.uniform(0, 1, size=len(records))
     with open(FINE_TUNE_CALENDAR, 'w') as f:
         writer = csv.writer(f)
         writer.writerow(['sentence1', 'sentence2', 'score', 'split'])
         rows = list()
-        for record in records:
-            rows.append((record['description'], event2seq(record['event_series'], record['widgets']), 5, 'train'))
+        rows_ = list()
+        for index, record in enumerate(records):
+            if idxs[index] < 0.1:
+                split = 'test'
+            elif idxs[index] < 0.3:
+                split = 'dev'
+            else:
+                split = 'train'
+            rows.append((record['description'], event2seq(record['event_series'], record['widgets']), 5, split))
+        # rows = data_enhance(rows)
+
         writer.writerows(rows)
+
+
+def data_enhance(rows):
+    rows_ = []
+    for row in rows:
+        s1, s2, score, split = row
+        if split == 'dev':
+            continue
+        if split == 'train':
+            # 同义词替换
+            pass
+    return rows_
 
 
 if __name__ == '__main__':

@@ -42,7 +42,8 @@ dev_samples = []
 test_samples = []
 # with gzip.open(sts_dataset_path, 'rt', encoding='utf8') as fIn:
 
-reader = csv.DictReader(FINE_TUNE_CALENDAR)
+f = open(FINE_TUNE_CALENDAR, 'r')
+reader = csv.DictReader(f)
 for row in reader:
     score = float(row['score']) / 5.0  # Normalize score to range 0 ... 1
     inp_example = InputExample(texts=[row['sentence1'], row['sentence2']], label=score)
