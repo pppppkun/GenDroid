@@ -1,8 +1,6 @@
-import xml.etree.ElementTree as et
 import logging
 import demo.db as db
 import demo.utils as utils
-from functools import reduce
 
 analyst_log = logging.getLogger('analyst')
 analyst_log.setLevel(logging.DEBUG)
@@ -24,10 +22,10 @@ widget_attempt_action_map = {
 
 class Analyst:
     def gui_analysis(self, gui):
-        for history_gui in db.guis:
-            if history_gui.pre == gui:
-                pass
-        pass
+        guis = db.get_all_guis()
+        for gui in guis:
+            rid, pre, _ = gui
+            #
 
     def description_analysis(self, description):
         pass

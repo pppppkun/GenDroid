@@ -3,8 +3,7 @@ this class will give confidence between query and given node
 """
 from demo.event import event_factory, VirtualEvent, EventData
 from demo.analyst import analyst
-from utils.common import FunctionWrap
-from copy import deepcopy
+from demo.utils import FunctionWrap
 from collections import deque
 from sentence_transformers import SentenceTransformer, util
 from functools import reduce
@@ -33,15 +32,6 @@ resource_id_pattern = re.compile(r'.*:id/(.*)')
 NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-widget_attempt_action_map = {
-    'ImageView': ['click', 'long_click', ],
-    'EditText': ['set_text'],
-    'TextView': ['click'],
-    'Button': ['click', 'long_click', ],
-    'ImageButton': ['click', 'long_click', ],
-    'CheckBox': ['click']
-}
-
 
 def predict_use_sbert(description, keys):
     emd1 = model.encode(description)
@@ -51,9 +41,10 @@ def predict_use_sbert(description, keys):
 
 
 def predict_use_bert(description, keys):
-    from model.api import predict_two_sentence
-    manhattan_sim = [predict_two_sentence(description, key)[0] for key in keys]
-    manhattan_sim.sort(key=lambda x: -x)
+    from model.bert.api import predict_two_sentence
+    # manhattan_sim = [predict_two_sentence(description, key)[0] for key in keys]
+    # manhattan_sim.sort(key=lambda x: -x)
+    manhattan_sim = predict_two_sentence(description, keys)[0]
     return manhattan_sim
 
 
@@ -95,15 +86,6 @@ def get_node_attribute_values(node: et.Element):
 
 def average_cos(result):
     return sum(result) / len(result)
-
-
-def get_action_based_classes(node: et.Element):
-    class_ = node.get('class')
-    class_ = class_[class_.rfind('.') + 1:]
-    if class_ in widget_attempt_action_map:
-        return widget_attempt_action_map[class_]
-    else:
-        return ['click']
 
 
 non_action_view = {
@@ -168,27 +150,10 @@ class Constructor:
         return predict_function[self.predict_model](description, keys)
 
     # TODO more freestyle description
-    def construct(self, gui, v_event: VirtualEvent):
-        # nlp = spacy.load('en_core_web_sm')
-        # doc = nlp(record.description)
-        # action = ''
-        # for token in doc:
-        #     if token.pos_ == 'VERB':
-        #         action = token
-        #         break
-        #
-        # if action != '':
-        #     action = \
-        #         sorted(
-        #             list(map(lambda action_: (action_, predict_use_sbert(action.text, action_.replace('_', ' '))[0]),
-        #                      ACTIONS)),
-        #             key=lambda x: -x[1])[0][0]
-        #     if action in SET_ACTIONS:
-        #         action = 'set_text'
-        #     action.replace(' ', '_')
-        #
-        # ui_info = [child for child in action.children][0]
-        # ui_info = ' '.join([child.text for child in ui_info.subtree])
+    def construct(self, gui, executor, v_event: VirtualEvent):
+
+
+
         ui_info = v_event.description
         root = et.fromstringlist(gui)
         construct_log.info('transfer gui and record to model')
@@ -232,4 +197,6 @@ class Constructor:
 
 
 if __name__ == '__main__':
-    pass
+    s1 = 'select an event named test create'
+    s2 = 'click the TextView which text is test create'
+    print(predict_use_bert(s1, s2))

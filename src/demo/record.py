@@ -22,7 +22,9 @@ def record_events(
         pre_device_info,
         post_device_info,
         pre_screenshot,
-        post_screenshot
+        post_screenshot,
+        pre_xml,
+        post_xml
 ):
     d = dict()
     d['description'] = description
@@ -32,6 +34,8 @@ def record_events(
     d['post_device_info'] = post_device_info
     d['pre_screenshot'] = pre_screenshot
     d['post_screenshot'] = post_screenshot
+    d['pre_xml'] = pre_xml
+    d['post_xml'] = post_xml
     insert_record(record=d)
     f = open('record.json', 'r')
     records = json.load(f)

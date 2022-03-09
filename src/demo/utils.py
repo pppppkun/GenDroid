@@ -2,6 +2,33 @@ from functools import reduce
 import xml.etree.ElementTree as et
 
 
+class FunctionWrap:
+    def __init__(self, _data, f=None, _lambda=None):
+        self.data = _data
+        if f is None:
+            self.f = None
+        else:
+            self.f = f(_lambda, _data)
+
+    def append(self, f, _lambda):
+        if self.f is None:
+            self.f = f(_lambda, self.data)
+        elif f is sorted:
+            self.f = sorted(self.f, key=_lambda)
+        else:
+            self.f = f(_lambda, self.f)
+        return self
+
+    def iter(self):
+        return self.f
+
+    def do(self):
+        if type(self.f) is not filter and type(self.f) is not map:
+            return self.f
+        else:
+            return list(self.f)
+
+
 def get_class(node):
     class_ = ''
     if type(node) is dict:

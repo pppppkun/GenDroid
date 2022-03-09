@@ -7,32 +7,24 @@ my_client = pymongo.MongoClient("mongodb://localhost:27017/")
 db = ''
 gui_col = ''
 
-GUI = namedtuple('GUI', ['rid', 'pre', 'post'])
+GUI = namedtuple('GUI', ['rid', 'pre_img', 'post_img', 'pre_xml', 'post_xml'])
 Events = namedtuple('events', ['rid', 'event_series'])
 Record = namedtuple('record', ['rid', 'description', 'event_series', 'widgets', 'pre_device_info', 'post_device_info'
-    , 'pre_screenshot', 'post_screenshot'])
+    , 'pre_screenshot', 'post_screenshot', 'pre_xml', 'post_xml'])
 Event = namedtuple('event', ['widget', 'action'])
-records = list(Record)
-event_segments = list(Events)
-guis = list(GUI)
-descriptions = list(str)
-events = list(Event)
-
-
-# d['description'] = description
-# d['event_series'] = event_series
-# d['widgets'] = widgets
-# d['pre_device_info'] = pre_device_info
-# d['post_device_info'] = post_device_info
-# d['pre_screenshot'] = pre_screenshot
-# d['post_screenshot'] = post_screenshot
+records = list()
+event_segments = list()
+guis = list()
+descriptions = list()
+events = list()
 
 
 def insert_record(record):
     rid = len(records)
     records.append(Record(rid, **record))
     event_segments.append(Events(rid, record['event_series']))
-    guis.append(GUI(rid=rid, pre=record['pre_screenshot'], post=record['post_screenshot']))
+    guis.append(GUI(rid=rid, pre_img=record['pre_screenshot'], post_img=record['post_screenshot']
+                    , pre_xml=record['pre_xml'], post_xml=record['post_xml']))
     descriptions.append(record['description'])
     for e_w in list(zip(record['event_series'], record['widgets'])):
         event = e_w[0]
@@ -43,3 +35,7 @@ def insert_record(record):
 
 def get_all_events() -> List[Event]:
     return events
+
+
+def get_all_guis() -> List[GUI]:
+    return guis
