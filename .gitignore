@@ -10,6 +10,9 @@ payRepair交接.md
 **/**/.ipynb_checkpoints
 **/**/.vector_cache
 **/**/*.h5
+src/**/**/*.json
+src/**/*.ep*
+src/**/output
 doc
 benchmark
 output_model
