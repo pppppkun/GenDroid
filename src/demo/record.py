@@ -36,7 +36,7 @@ def record_events(
     d['post_screenshot'] = post_screenshot
     d['pre_xml'] = pre_xml
     d['post_xml'] = post_xml
-    insert_record(record=d)
+    # insert_record(record=d)
     f = open('record.json', 'r')
     records = json.load(f)
     f.close()

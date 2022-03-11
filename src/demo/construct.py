@@ -2,7 +2,6 @@
 this class will give confidence between query and given node
 """
 from demo.event import event_factory, VirtualEvent, EventData
-from demo.analyst import analyst
 from demo.utils import FunctionWrap
 from collections import deque
 from sentence_transformers import SentenceTransformer, util
@@ -129,10 +128,11 @@ predict_function = {
 
 
 class Constructor:
-    def __init__(self, select_strategy=SELECT_ALL, calculate_strategy=CALCULATE_MAX, predict_model=SBERT):
+    def __init__(self, analyst, select_strategy=SELECT_ALL, calculate_strategy=CALCULATE_MAX, predict_model=SBERT):
         self.select_strategy = select_strategy
         self.calculate_strategy = calculate_strategy
         self.predict_model = predict_model
+        self.analyst = analyst
         pass
 
     def confidence(self, node: et.Element, description):
@@ -152,8 +152,6 @@ class Constructor:
     # TODO more freestyle description
     def construct(self, gui, executor, v_event: VirtualEvent):
 
-
-
         ui_info = v_event.description
         root = et.fromstringlist(gui)
         construct_log.info('transfer gui and record to model')
@@ -163,7 +161,7 @@ class Constructor:
             selector = get_node_attribute(node_with_confidence.node)
             # action should study from history (ie same widget have same action, new widget should consider the
             # static analysis result)
-            action = analyst.action_analysis(node_with_confidence.node)
+            action = self.analyst.action_analysis(node_with_confidence.node)
             if action == 'set_text' and data is None:
                 data = 'place holder'
             event_data = EventData(action=action, selector=selector, data=data)

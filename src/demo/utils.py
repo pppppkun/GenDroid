@@ -63,3 +63,15 @@ def is_same_widget_from_widget_info(w1, w2):
         is_same = is_same and w1[a2] == w2[a1]
 
     return is_same
+
+
+def get_all_nodes(xml):
+    result = []
+
+    def get_child(root):
+        for i in root:
+            result.append(i)
+            get_child(i)
+
+    get_child(xml)
+    return result

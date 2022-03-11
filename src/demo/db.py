@@ -1,3 +1,5 @@
+import json
+
 import pymongo
 from collections import namedtuple
 
@@ -15,17 +17,23 @@ Event = namedtuple('event', ['widget', 'action'])
 records = list()
 event_segments = list()
 guis = list()
-descriptions = list()
+descriptions = dict()
 events = list()
 
 
-def insert_record(record):
-    rid = len(records)
+def load_from_json(file):
+    f = json.load(open(file, 'r'))
+    f = f['d2e']
+    for i in range(len(f)):
+        insert_record(i, f[i])
+
+
+def insert_record(rid, record):
     records.append(Record(rid, **record))
     event_segments.append(Events(rid, record['event_series']))
     guis.append(GUI(rid=rid, pre_img=record['pre_screenshot'], post_img=record['post_screenshot']
                     , pre_xml=record['pre_xml'], post_xml=record['post_xml']))
-    descriptions.append(record['description'])
+    descriptions[rid] = record['description']
     for e_w in list(zip(record['event_series'], record['widgets'])):
         event = e_w[0]
         widget = e_w[1]
@@ -39,3 +47,17 @@ def get_all_events() -> List[Event]:
 
 def get_all_guis() -> List[GUI]:
     return guis
+
+
+def get_selectors_by_rid():
+    selectors = dict()
+    for rid, event_series in event_segments:
+        selectors.setdefault(rid, list)
+        for event in event_series:
+            selector = event['selector']
+            selectors[rid].append(selector)
+    return selectors
+
+
+def get_description_by_rid():
+    return descriptions

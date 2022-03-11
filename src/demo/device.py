@@ -51,6 +51,7 @@ class Device:
                     self.u.sleep(2)
             if self.u.info['currentPackageName'] != self.package:
                 return self.get_gui(), False
+            self.close_keyboard()
             return self.get_gui(), True
         except BaseError:
             return self.get_gui(), False
@@ -65,6 +66,14 @@ class Device:
         }
         temp = dict(map(lambda x: (translate[x], selector[x]), selector))
         return self.u(**temp)
+
+    def exists_widget(self, selector):
+        widget = self.select_widget(selector)
+        return widget.exists
+
+    def close_keyboard(self):
+        if 'main_keyboard_frame' in self.get_gui():
+            self.u.press(key='back')
 
     # need a more efficiency way.
     # TODO

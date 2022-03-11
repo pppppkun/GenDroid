@@ -14,9 +14,8 @@ executor_log.addHandler(executor_log_ch)
 
 
 class Executor:
-    def __init__(self, device: Device, analysis: Analyst, series, constructor: Constructor, verbose):
+    def __init__(self, device: Device, series, constructor: Constructor, verbose):
         self.device = device
-        self.analysis = analysis
         self.series = series
         self.constructor = constructor
         self.verbose = verbose
