@@ -40,8 +40,10 @@ def execute_and_record(description_, events, device, executor):
         post_xml=gui_xml2json(post_xml, activity_name=get_s2v_activity_name(post_info))
     )
 
+
 def get_s2v_activity_name(info):
     return info['package'] + '/' + info['package'] + info['activity']
+
 
 def build_virtual_event(description_, data=None):
     return VirtualEvent(description_, data)

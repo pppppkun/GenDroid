@@ -83,6 +83,25 @@ def get_node_attribute_values(node: et.Element):
     return result
 
 
+widget_attempt_action_map = {
+    'ImageView': ['click', 'long_click', ],
+    'EditText': ['set_text'],
+    'TextView': ['click'],
+    'Button': ['click', 'long_click', ],
+    'ImageButton': ['click', 'long_click', ],
+    'CheckBox': ['click']
+}
+
+
+def get_action_based_classes(node: et.Element):
+    class_ = node.get('class')
+    class_ = class_[class_.rfind('.') + 1:]
+    if class_ in widget_attempt_action_map:
+        return widget_attempt_action_map[class_]
+    else:
+        return ['click']
+
+
 def average_cos(result):
     return sum(result) / len(result)
 
@@ -150,7 +169,7 @@ class Constructor:
         return predict_function[self.predict_model](description, keys)
 
     # TODO more freestyle description
-    def construct(self, gui, executor, v_event: VirtualEvent):
+    def construct(self, gui, v_event: VirtualEvent):
 
         ui_info = v_event.description
         root = et.fromstringlist(gui)
@@ -161,9 +180,10 @@ class Constructor:
             selector = get_node_attribute(node_with_confidence.node)
             # action should study from history (ie same widget have same action, new widget should consider the
             # static analysis result)
-            action = self.analyst.action_analysis(node_with_confidence.node)
+            # action = self.analyst.action_analysis(node_with_confidence.node)
+            action = get_action_based_classes(node_with_confidence.node)[0]
             if action == 'set_text' and data is None:
-                data = 'place holder'
+                data = {'text': 'place_holder'}
             event_data = EventData(action=action, selector=selector, data=data)
             try:
                 event_ = event_factory[action](event_data)
@@ -172,6 +192,7 @@ class Constructor:
                 return result
             except:
                 construct_log.error(action, selector, data)
+                return []
 
         f = FunctionWrap((_node for _node in root.iter()))
         f.append(
@@ -195,6 +216,8 @@ class Constructor:
 
 
 if __name__ == '__main__':
-    s1 = 'select an event named test create'
-    s2 = 'click the TextView which text is test create'
-    print(predict_use_bert(s1, s2))
+    s1 = 'save'
+    s2 = 'Save'
+    s3 = 'event description'
+    print(predict_use_sbert(s1, s2))
+    print(predict_use_sbert(s1, s3))

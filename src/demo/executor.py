@@ -83,4 +83,11 @@ class Executor:
         self.device.execute(new_event)
 
     def to_scripts(self):
-        pass
+        scripts = """
+import uiautomator2 as u2
+d = u2.connect()
+"""
+        for event in self.event_stack.get_events():
+            scripts += event.to_uiautomator2_format() + '\n'
+        f = open('test_script.py', 'w')
+        f.write(scripts)

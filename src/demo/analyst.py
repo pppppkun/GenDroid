@@ -40,8 +40,8 @@ class Analyst:
         d1 similarity now-d2 & LOW_CONFIDENCE -> origin methods (only infer len and type)
         d1 similarity now-d2 & MEDIUM_CONFIDENCE -> one by one construct and follow the event by d1
                                                     (may have the same result. (need more consideration))
-        d1 non-similarity now-d2 & HIGH_CONFIDENCE -> origin methods (different intent on same activity)
-        d1 non-similarity now-d2 & LOW_CONFIDENCE -> origin methods (totally different)
+        d1 non-similarity now-d2 & HIGH_CONFIDENCE -> origin methods (different intent on same activity) -> S-BERT
+        d1 non-similarity now-d2 & LOW_CONFIDENCE -> origin methods (totally different) ------------------> S-BERT
         d1 non-similarity now-d2 & MEDIUM_CONFIDENCE -> have different flow (d1 is ok but d2 is refuse)
         :param description:
         :return:
@@ -60,9 +60,8 @@ class Analyst:
                 if self.device.exists_widget(selector):
                     result[rid] += 1
         """ if score > 1 -> do lots of event on the fragment of activity (for example : full form) """
-        """ if score == 1 -> maybe only one event have to do on the activity (for example : save, create event, more option...)|
+        """ if score == 1 -> maybe only one event have to do on the activity (for example : save, create event, more option (EASY!) )
                             maybe the whole events were done on multi screen (VERY HARD)"""
-
         for rid in result:
             score = result[rid]
             len_of_events = len(selectors_by_rid[rid])

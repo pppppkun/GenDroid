@@ -79,6 +79,22 @@ class Event:
     def to_dict(self):
         return {'action': self.action, 'selector': self.selector, 'data': self.text}
 
+    def to_uiautomator2_format(self):
+        translate = {
+            'text': 'text',
+            'content-desc': 'descriptionContains',
+            'index': 'index',
+            'resource-id': 'resourceId',
+            'class': 'className'
+        }
+        temp = dict(map(lambda x: (translate[x], self.selector[x]), self.selector))
+        key = list(temp.keys())[0]
+
+        if self.action != 'set_text':
+            return 'd({}=\'{}\').{}()'.format(key, temp[key], self.action)
+        else:
+            return 'd({}=\'{}\').{}(\'{}\')'.format(key, temp[key], self.action, self.text)
+
 
 class VirtualEvent:
     def __init__(self, description, data=None):
