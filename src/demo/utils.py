@@ -75,3 +75,16 @@ def get_all_nodes(xml):
 
     get_child(xml)
     return result
+
+
+FEATURE_KEYS = ['class', 'resource-id', 'text', 'content-desc', 'clickable', 'password', 'naf']
+
+
+def get_activity(node):
+    assert node.split(':')[0]
+    return node.split(':')[0].split('$')[0]
+
+
+def get_method(node):
+    assert node.split()[-1].split('(')[0]
+    return node.split()[-1].split('(')[0]
