@@ -1,3 +1,5 @@
+import os
+
 from demo.event import event_factory, VirtualEvent, EventData
 from demo.record import record_events
 from scripts.convert import gui_xml2json
@@ -47,3 +49,25 @@ def get_s2v_activity_name(info):
 
 def build_virtual_event(description_, data=None):
     return VirtualEvent(description_, data)
+
+
+def set_app(apk_folder, app_name):
+    """
+    1. apktool d {apk} -f -o apk_folder/{decompile}
+    2. mkdir apk_folder/out
+    :param apk_folder:
+    :param app_name:
+    :return:
+    """
+    td_path = '/Users/pkun/PycharmProjects/ui_api_automated_test/TrimDroid.jar'
+    apk = os.path.join(apk_folder, app_name + ".apk")
+    decompile = os.path.join(apk_folder, 'decompile')
+    out = os.path.join(apk_folder, 'out')
+    os.system(f'mkdir {decompile}')
+    os.system(f'apktool d {apk} -f -o {decompile}')
+    os.system(f'java -jar {td_path} {apk_folder} {app_name} {out}')
+    pass
+
+
+if __name__ == '__main__':
+    set_app('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/AcDisplay', 'AcDisplay')
