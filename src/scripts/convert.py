@@ -49,8 +49,8 @@ def to_scripts():
 import uiautomator2 as u2
 d = u2.connect()
 """
-    scripts += e.to_uiautomator2_format()
-    print(scripts)
+    event = Event(action='click', selector={'text':'123', 'content-desc':'licas', 'resource-id':'aljchas'})
+    print(event.to_uiautomator2_format())
 
 
 if __name__ == '__main__':

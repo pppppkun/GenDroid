@@ -88,12 +88,13 @@ class Event:
             'class': 'className'
         }
         temp = dict(map(lambda x: (translate[x], self.selector[x]), self.selector))
-        key = list(temp.keys())[0]
-
+        param = []
+        for key in temp:
+            param.append('{}=\'{}\''.format(key, temp[key]))
         if self.action != 'set_text':
-            return 'd({}=\'{}\').{}()'.format(key, temp[key], self.action)
+            return 'd({}).{}()'.format(','.join(param), self.action)
         else:
-            return 'd({}=\'{}\').{}(\'{}\')'.format(key, temp[key], self.action, self.text)
+            return 'd({}).{}(\'{}\')'.format(','.join(param), self.action, self.text)
 
 
 class VirtualEvent:

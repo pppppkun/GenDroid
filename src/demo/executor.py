@@ -83,11 +83,19 @@ class Executor:
         self.device.execute(new_event)
 
     def to_scripts(self):
-        scripts = """
+        scripts = \
+"""
 import uiautomator2 as u2
 d = u2.connect()
-"""
+d.app_stop('{}')
+d.app_start('{}')
+""".format(self.device.package, self.device.package)
         for event in self.event_stack.get_events():
-            scripts += event.to_uiautomator2_format() + '\n'
+            scripts += event.to_uiautomator2_format() + \
+"""
+d.sleep(3)
+if 'main_keyboard_frame' in d.dump_hierarchy():
+    d.press(key='back')
+"""
         f = open('test_script.py', 'w')
         f.write(scripts)
