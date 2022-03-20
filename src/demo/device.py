@@ -75,8 +75,10 @@ class Device:
         if 'main_keyboard_frame' in self.get_gui():
             self.u.press(key='back')
 
+    def app_current(self):
+        return self.u.app_current
+
     # need a more efficiency way.
-    # TODO
     def stop_and_restart(self, events=None):
         self.u.app_stop(self.package)
         self.u.app_uninstall(self.package)

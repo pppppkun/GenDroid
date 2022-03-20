@@ -88,3 +88,12 @@ def get_activity(node):
 def get_method(node):
     assert node.split()[-1].split('(')[0]
     return node.split()[-1].split('(')[0]
+
+
+def get_selector_from_dynamic_edge(criteria):
+    attributes = ['text', 'content-desc', 'resource-id']
+    selectors = dict()
+    for attribute in attributes:
+        assert attribute in criteria
+        selectors[attribute] = criteria[attribute]
+    return selectors

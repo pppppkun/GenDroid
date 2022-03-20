@@ -78,6 +78,9 @@ def get_node_attribute_values(node: et.Element):
         resource_id = ''
     result = [text, content_desc, resource_id]
     result = list(filter(lambda x: len(x) != 0, result))
+    for i in range(len(result)):
+        if 'fab' in result[i]:
+            result[i] = result[i].replace('fab', '')
     if len(result) == 0:
         result.append(PLACE_HOLDER)
     return result
@@ -216,8 +219,8 @@ class Constructor:
 
 
 if __name__ == '__main__':
-    s1 = 'save'
-    s2 = 'Save'
-    s3 = 'event description'
+    s1 = 'fab create'
+    s2 = 'create notify'
+    s3 = 'create'
     print(predict_use_sbert(s1, s2))
-    print(predict_use_sbert(s1, s3))
+    print(predict_use_sbert(s2, s3))

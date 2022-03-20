@@ -69,12 +69,12 @@ class Event:
         self.text = None
         self.action = action
         self.selector = None
-        self.confidence = None
+        self.confidence = -1
         for i in kwargs:
             self.__setattr__(i, kwargs[i])
 
     def __str__(self):
-        return 'Event action={action}, selector={selector}'.format(action=self.action, selector=self.selector)
+        return 'Event action={action}, selector={selector} confidence={confidence}'.format(action=self.action, selector=self.selector, confidence=self.confidence)
 
     def to_dict(self):
         return {'action': self.action, 'selector': self.selector, 'data': self.text}

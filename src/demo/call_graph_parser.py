@@ -17,8 +17,8 @@ class CallGraphParser:
         self.group_nodes()
 
     def get_graph_from_dot_file(self):
-        if os.path.exists(os.path.join(self.static_info_folder, 'atm/atm.gv')):
-            graphs = pydot.graph_from_dot_file(os.path.join(self.static_info_folder, 'atm/atm.gv'))
+        if os.path.exists(os.path.join(self.static_info_folder, 'atm.gv')):
+            graphs = pydot.graph_from_dot_file(os.path.join(self.static_info_folder, 'atm.gv'))
             (g2,) = graphs
             G = nx.nx_pydot.from_pydot(g2)
             # remove edges with label "GUI (NULL)"
@@ -51,18 +51,16 @@ class CallGraphParser:
             )
 
     def get_paths_between_activities(self, activity_from, activity_to, consider_naf_only_widget=False):
-        a_paths = {}
+        all_paths = {}
         nodes_from, nodes_to = self.activity_to_nodes[activity_from], self.activity_to_nodes[activity_to]
         for n_from in nodes_from:
             for n_to in nodes_to:
                 n_paths = self.get_paths_between_nodes(n_from, n_to, consider_naf_only_widget)
                 for path in n_paths:
                     key = ''.join(path)
-                    if key not in a_paths:
-                        a_paths[key] = path
-        return list(a_paths.values())
-        # nodes_from, nodes_to = self.activity_to_nodes[activity_from], self.activity_to_nodes[activity_to]
-        pass
+                    if key not in all_paths:
+                        all_paths[key] = path
+        return list(all_paths.values())
 
     def get_paths_between_nodes(self, n_from, n_to, consider_naf_only_widget=False):
         """For now, only return one path for n_from -> n_to"""
@@ -124,35 +122,40 @@ class CallGraphParser:
         """add a dynamically found edge into G"""
         # nx automatically takes care of non-existing / duplicated node issue when adding an edge
         # every node is unique in a graph by its name
+
+        """
+        add node which create activity_from/to
+        """
         if act_from not in self.activity_to_onCreate_node:
             self.activity_to_onCreate_node[act_from] = act_from + ': void onCreate(' + list(self.onCreate_param)[
                 0] + ')'
         if act_to not in self.activity_to_onCreate_node:
             self.activity_to_onCreate_node[act_to] = act_to + ': void onCreate(' + list(self.onCreate_param)[0] + ')'
-        act_from = self.activity_to_onCreate_node[act_from]
-        act_to = self.activity_to_onCreate_node[act_to]
+        node_create_act_from = self.activity_to_onCreate_node[act_from]
+        node_create_act_to = self.activity_to_onCreate_node[act_to]
         attrs = set(utils.FEATURE_KEYS).difference({'clickable', 'password'})
         values = [w_stepping[a] for a in attrs]
+        # lbl_stepping is ...&${attrs}=${values}&...
         lbl_stepping = '&'.join([a + '=' + v for a, v in zip(attrs, values)])
         action = ' (onLongClick)' if w_stepping['action'][0] == 'long_press' else ' (onClick)'
         lbl_stepping = 'D@' + lbl_stepping + action
-        if act_from != act_to:
+        if node_create_act_from != node_create_act_to:
             is_edge_existed = False
-            for i in range(self.G.number_of_edges(act_from, act_to)):
-                if lbl_stepping == self.G.edges[(act_from, act_to, i)]['label']:
+            for i in range(self.G.number_of_edges(node_create_act_from, node_create_act_to)):
+                if lbl_stepping == self.G.edges[(node_create_act_from, node_create_act_to, i)]['label']:
                     is_edge_existed = True
                     break
             if not is_edge_existed:
-                print(f'Adding edge: from {act_from} to {act_to}\nlabel is: {lbl_stepping}')
-                self.G.add_edge(act_from, act_to, label=lbl_stepping)
-                self.update_act_to_nodes(act_from)
-                self.update_act_to_nodes(act_to)
+                print(f'Adding edge: from {node_create_act_from} to {node_create_act_to}\nlabel is: {lbl_stepping}')
+                self.G.add_edge(node_create_act_from, node_create_act_to, label=lbl_stepping)
+                self.update_act_to_nodes(node_create_act_from)
+                self.update_act_to_nodes(node_create_act_to)
         else:
-            if lbl_stepping not in self.self_loops[act_from]:
-                print(f'Adding self-loop: {act_from}, label: {lbl_stepping}')
-                self.self_loops[act_from].append(lbl_stepping)
-                self.G.add_edge(act_from, act_from, label=lbl_stepping)
-                self.update_act_to_nodes(act_from)
+            if lbl_stepping not in self.self_loops[node_create_act_from]:
+                print(f'Adding self-loop: {node_create_act_from}, label: {lbl_stepping}')
+                self.self_loops[node_create_act_from].append(lbl_stepping)
+                self.G.add_edge(node_create_act_from, node_create_act_from, label=lbl_stepping)
+                self.update_act_to_nodes(node_create_act_from)
 
     def update_act_to_nodes(self, node):
         act = utils.get_activity(node)
@@ -199,3 +202,34 @@ class CallGraphParser:
                 and not any([v for k, v in criteria.items() if k not in ['class', 'naf']]):
             return True
         return False
+
+
+NODE_TYPE = [
+    'dynamic',
+    'static'
+]
+
+
+class Node:
+    def __init__(self, type, attrib, action):
+        self.type = type
+        self.attrib = attrib
+        self.action = action
+
+    def __str__(self):
+        return f"{self.type}  {self.action}  {self.attrib}"
+
+    def to_graph_node(self):
+        pass
+
+if __name__ == '__main__':
+    cgp = CallGraphParser(static_info_folder='/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out')
+    # for node in cgp.G.nodes:
+    #     print(node)
+    # for edge in cgp.G.edges:
+    #     print(edge[0], edge[1], cgp.G.edges[edge]['label'])
+    print(cgp.activity_to_nodes.keys())
+    print(cgp.activity_to_onCreate_node)
+    for path in cgp.get_paths_between_activities('Root',
+                                                 'org.secuso.privacyfriendlytodolist.view.dialog.ProcessTodoTaskDialog'):
+        print(path)
