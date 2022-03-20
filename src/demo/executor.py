@@ -86,10 +86,15 @@ class Executor:
         scripts = \
 """
 import uiautomator2 as u2
+target = "/data/local/tmp/_tmp.apk"
 d = u2.connect()
-d.app_stop('{}')
+d.app_uninstall('{}')
+d.push('{}', target, show_progress=True)
+ret = d.shell(['pm', 'install', "-r", "-t", "-g", target], timeout=300)
+if ret.exit_code != 0:
+    raise RuntimeError(ret.output, ret.exit_code)
 d.app_start('{}')
-""".format(self.device.package, self.device.package)
+""".format(self.device.apk_path, self.device.package, self.device.package, self.device.package)
         for event in self.event_stack.get_events():
             scripts += event.to_uiautomator2_format() + \
 """

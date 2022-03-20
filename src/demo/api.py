@@ -1,6 +1,11 @@
+import os
+
 from demo.event import event_factory, VirtualEvent, EventData
 from demo.record import record_events
 from scripts.convert import gui_xml2json
+from demo.construct import Constructor
+from demo.device import Device
+from demo.executor import Executor
 import time
 
 
@@ -47,3 +52,47 @@ def get_s2v_activity_name(info):
 
 def build_virtual_event(description_, data=None):
     return VirtualEvent(description_, data)
+
+
+def set_app(apk_folder, app_name):
+    """
+    1. apktool d {apk} -f -o apk_folder/{decompile}
+    2. mkdir apk_folder/out
+    :param apk_folder:
+    :param app_name:
+    :return:
+    """
+    td_path = '/Users/pkun/PycharmProjects/ui_api_automated_test/TrimDroid.jar'
+    apk = os.path.join(apk_folder, app_name + ".apk")
+    decompile = os.path.join(apk_folder, 'decompile')
+    out = os.path.join(apk_folder, 'out')
+    os.system(f'mkdir {decompile}')
+    os.system(f'mkdir {out}')
+    os.system(f'apktool d {apk} -f -o {decompile}')
+    os.system(f'java -jar {td_path} {apk_folder} {app_name} {out}')
+    pass
+
+
+class Tester:
+    def __init__(self, apk_path):
+        self.device = Device(apk_path)
+        self.constructor = Constructor(analyst=None)
+        self.executor = Executor(device=self.device, series=None, constructor=self.constructor, verbose='debug')
+        self.virtual_event = []
+        self.device.u.sleep(5)
+
+    def add_description(self, description, data=None):
+        self.virtual_event.append(build_virtual_event(description, data))
+        return self
+
+    def construct(self):
+        for ve in self.virtual_event:
+            self.executor.construct_new_event(ve)
+        self.executor.to_scripts()
+
+    def print_script(self):
+        self.executor.to_scripts()
+
+
+if __name__ == '__main__':
+    set_app('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/AcDisplay', 'AcDisplay')

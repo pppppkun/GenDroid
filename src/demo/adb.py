@@ -13,7 +13,6 @@ def get_all_installed_package(u: Device):
 
 def install_grant_runtime_permissions(u: Device, data):
     target = "/data/local/tmp/_tmp.apk"
-    u.app_install(data)
     u.push(data, target, show_progress=True)
     ret = u.shell(['pm', 'install', "-r", "-t", "-g", target], timeout=300)
     if ret.exit_code != 0:
