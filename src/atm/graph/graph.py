@@ -9,25 +9,13 @@ class Graph:
         pass
 
     @abstractmethod
-    def import_graph(self):
-        pass
+    def import_graph(self): pass
 
+    @abstractmethod
+    def find_path_between_activity(self, src, tgt): pass
 
-# class TrimDroidGraph(Graph):
-#     def __init__(self, graph_folder):
-#         super().__init__(graph_folder)
-#         self.import_graph()
-#
-#     def import_graph(self):
-#         if os.path.exists(os.path.join(self.graph_folder, 'atm.gv')):
-#             pass
+    @abstractmethod
+    def add_edge(self, src, tgt): pass
 
-
-class Edge:
-    def __init__(self):
-        pass
-
-
-class Node:
-    def __init__(self):
-        pass
+    @abstractmethod
+    def add_node(self, node): pass
