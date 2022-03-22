@@ -2,89 +2,148 @@ import os.path
 from bidict import bidict
 from collections import defaultdict, namedtuple
 import xml.etree.ElementTree as et
+from atm.widget import Widget
+import csv
 
 StringInfo = namedtuple('string_info', ['text', 'id'])
 
+WIDGET_TYPES_FOR_LAYOUT = ['TextView', 'EditText', 'Button', 'ImageButton',
+                           'android.support.design.widget.FloatingActionButton',
+                           'CheckBox', 'RadioButton']  # ,
+
+
+# 'CheckBox', 'Switch', 'RadioButton']
 
 class DataBase:
-    def __init__(self, decompile_folder, package):
-        self.decompile_folder = decompile_folder
-        self.widgets = defaultdict(list)
-        self.widget_bidict = bidict()
-        self.strings = dict(StringInfo)
-        self.extract_widget()
-        self.extract_strings()
+    def __init__(self, decompile_folder, atm_folder, package):
         self.package = package
+        self.atm_folder = atm_folder
+        self.decompile_folder = decompile_folder
+        self.widgets = list()
+        self.widget_bidict = None
+        self.layout_bidict = None
+        self.strings = defaultdict(StringInfo)
+        self.extract_widget()
+        self.extract_layout()
+        self.extract_strings()
+        self.cid2activity = self.extract_activity()
+        self.extract_widgets_from_layout()
 
-    # def extract_widgets_from_layout(self):
-    #     parent_layout = {}
-    #     layout_folder = os.path.join(self.decompile_folder, 'res', 'layout')
-    #     layout_xmls = [f for f in os.listdir(layout_folder)
-    #                    if os.path.isfile(os.path.join(layout_folder, f)) and f.endswith('.xml')]
-    #     # first pass to get layout hierarchy
-    #     for xml_file in layout_xmls:
-    #         current_layout = xml_file.split('.')[0]
-    #         e = et.parse(os.path.join(layout_folder, xml_file))
-    #         for node in e.findall('//include'):  # e.g., <include layout="@layout/content_main" />
-    #             child_layout = self.decode(node.attrib['layout'])
-    #             parent_layout[child_layout] = current_layout
-    #
-    #     # second pass to get widgets from a layout
-    #     # android.widget.ImageButton
-    #
-    #     attrs = ['id', 'text', 'contentDescription', 'hint']
-    #     attrs_ui = ['resource-id', 'text', 'content-desc', 'text']  # the attributes interpreted by UI Automator
-    #     widgets = []
-    #     for xml_file in layout_xmls:
-    #         # print(xml_file)
-    #         current_layout = xml_file.split('.')[0]
-    #         e = et.parse(os.path.join(layout_folder, xml_file))
-    #         for w_type in ResourceParser.WIDGET_TYPES_FOR_LAYOUT:
-    #             for node in e.xpath('//' + w_type):
-    #                 d = {}
-    #                 for k, v in node.attrib.items():
-    #                     # attrib: {http://schemas.android.com/apk/res/android}id, @id/ok
-    #                     for a in attrs:
-    #                         k = k.split('}')[1] if k.startswith('{') else k
-    #                         if k == a:
-    #                             a_ui = attrs_ui[attrs.index(a)]
-    #                             if a_ui in d:
-    #                                 d[a_ui] += self.decode(v)
-    #                             else:
-    #                                 d[a_ui] = self.decode(v)
-    #                             # d[a] = v
-    #                 if d:
-    #                     d['class'] = w_type
-    #                     # FloatingActionButton will appear as ImageButton when interpreted by UI Automator
-    #                     if d['class'] == 'android.support.design.widget.FloatingActionButton':
-    #                         d['class'] = 'ImageButton'
-    #                     d['class'] = ResourceParser.CLASS_PREFIX + d['class']
-    #                     if 'resource-id' in d:
-    #                         d['oId'] = self.get_oId_from_wName(d['resource-id'])
-    #                     else:
-    #                         d['oId'] = ""
-    #                     mother_layout = current_layout
-    #                     while mother_layout in parent_layout:
-    #                         mother_layout = parent_layout[mother_layout]
-    #                     d['layout_name'] = mother_layout
-    #                     d['layout_oId'] = self.get_oId_from_lName(mother_layout)
-    #                     d['package'], d['activity'], d['method'] = self.match_act_info_for_oId(d['oId'],
-    #                                                                                            d['layout_oId'])
-    #                     for a in attrs_ui:
-    #                         if a not in d:
-    #                             d[a] = ""
-    #                     # if d['name'] or d['oId']:
-    #                     widgets.append(d)
-    #                     # print(d)
-    #     return widgets
+    def extract_widgets_from_layout(self):
+        parent_layout = {}
+        layout_folder = os.path.join(self.decompile_folder, 'res', 'layout')
+        layout_xmls = [f for f in os.listdir(layout_folder)
+                       if os.path.isfile(os.path.join(layout_folder, f)) and f.endswith('.xml')]
+        # first pass to get layout hierarchy
+        for xml_file in layout_xmls:
+            current_layout = xml_file.split('.')[0]
+            e = et.parse(os.path.join(layout_folder, xml_file)).getroot()
+            for node in e.findall('.//include'):  # e.g., <include layout="@layout/content_main" />
+                child_layout = self.decode(node.attrib['layout'])
+                parent_layout[child_layout] = current_layout
 
-    def extract_widget(self):
+        # second pass to get widgets from a layout
+        # android.widget.ImageButton
+        has_seen = {}
+        attrs = ['id', 'text', 'contentDescription', 'hint']
+        attrs_ui = ['resource-id', 'text', 'content-desc', 'hint']  # the attributes interpreted by UI Automator
+        for xml_file in layout_xmls:
+            current_layout = xml_file.split('.')[0]
+            e = et.parse(os.path.join(layout_folder, xml_file)).getroot()
+            for w_type in WIDGET_TYPES_FOR_LAYOUT:
+                for node in e.findall('.//' + w_type):
+                    d = {}
+                    for key in node.attrib:
+                        value = node.attrib[key]
+                        if 'schemas.android.com' in key:
+                            key = key.split('}')[1]
+                        if key in attrs:
+                            key = attrs_ui[attrs.index(key)]
+                        if key in d:
+                            d[key] += ',' + self.decode(value)
+                        else:
+                            d[key] = self.decode(value)
+                    if d:
+                        d['class'] = w_type
+                        if 'FloatingActionButton' in d['class']:
+                            d['class'] = 'ImageButton'
+                        d['class'] = 'android.widget.' + d['class']
+                        if 'resource-id' in d:
+                            d['id'] = self.get_widget_id_from_name(d['resource-id'])
+                        else:
+                            d['id'] = ""
+                        mother_layout = current_layout
+                        while mother_layout in parent_layout:
+                            mother_layout = parent_layout[mother_layout]
+                        d['layout_name'] = mother_layout
+                        d['layout_oId'] = self.get_layout_id_from_name(mother_layout)
+                        d['package'], d['activity'], d['method'] = self.match_act_info_for_oId(d['id'], d['layout_oId'])
+                        for attr in attrs_ui:
+                            if attr not in d:
+                                d[attr] = ''
+                        self.widgets.append(Widget(d))
+
+    def get_widget_id_from_name(self, w_name):
+        if w_name in self.widget_bidict:
+            return self.widget_bidict[w_name]
+        return None
+
+    def extract_layout(self):
         name_id_map = dict()
-        tree = et.parse(os.path.join(self.decompile_folder, 'res', 'values', 'public.xml'))
-        for node in tree.findall('.//resources/public/[@type="id"]'):
+        e = et.parse(os.path.join(self.decompile_folder, 'res', 'values', 'public.xml')).getroot()
+        for node in e.findall('.//public[@type="layout"]'):
             if 'name' in node.attrib and 'id' in node.attrib:
                 name = node.attrib['name']
                 id = str(int(node.attrib['id'], 16))
+                assert name not in name_id_map
+                name_id_map[name] = id
+        self.layout_bidict = bidict(name_id_map)
+
+    def match_act_info_for_oId(self, widget_id, layout_id):
+        act_from_w, act_from_l = self.get_activity_from_cid(widget_id), self.get_activity_from_cid(
+            layout_id)
+        if act_from_w and act_from_l:
+            activity_w = act_from_w['activity'].split('$')[0]
+            activity_l = act_from_l['activity'].split('$')[0]
+            if activity_w != activity_l:
+                if 'activity' in activity_w.lower():
+                    return list(act_from_w.values())
+                elif 'activity' in activity_l.lower():
+                    return list(act_from_l.values())
+                else:
+                    assert False
+            return list(act_from_w.values())
+        elif act_from_w or act_from_l:
+            if act_from_w:
+                return list(act_from_w.values())
+            else:
+                return list(act_from_l.values())
+        else:
+            return "", "", ""
+
+    def extract_activity(self):
+        cid2activity = {}
+        with open(os.path.join(self.atm_folder, 'constantInfo.csv')) as f:
+            # fields: constantId, packageIn, methodIn, methodRefClass, methodRef, codeUnit,
+            # (varName, varClass, varRefClass)
+            reader = csv.DictReader(f)
+            for row in reader:
+                oId = row['constantId']
+                if row['packageIn'].startswith(self.package) and \
+                        (oId in self.widget_bidict.inverse or oId in self.layout_bidict.inverse):
+                    cid2activity[oId] = {'package': self.package,
+                                         'activity': row['packageIn'].replace(self.package, ''),
+                                         'method': row['methodIn']}
+        return cid2activity
+
+    def extract_widget(self):
+        name_id_map = dict()
+        tree = et.parse(os.path.join(self.decompile_folder, 'res', 'values', 'public.xml')).getroot()
+        for node in tree.findall('.//public/[@type="id"]'):
+            if 'name' in node.attrib and 'id' in node.attrib:
+                name = node.attrib['name']
+                id = str(int(node.attrib['id'], 16))
+                assert name not in name_id_map
                 name_id_map[name] = id
         self.widget_bidict = bidict(name_id_map)
 
@@ -141,10 +200,29 @@ class DataBase:
             return value.split('/')[-1]
         return value
 
+    def get_layout_id_from_name(self, name):
+        if name in self.layout_bidict:
+            return self.layout_bidict[name]
+        else:
+            return None
+
+    def get_activity_from_cid(self, cid):
+        if cid in self.cid2activity:
+            return self.cid2activity[cid]
+        else:
+            return None
     # def get_all_widget(self):
 
 
 if __name__ == '__main__':
-    db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/decompile', '1')
-    print(db.strings['abc_action_bar_home_description'].text)
-
+    db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/decompile',
+                  '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out',
+                  'org.secuso.privacyfriendlytodolist')
+    n = 0
+    for widget in db.widgets:
+        if widget.activity != '':
+            n += 1
+    print(f'has activity:{n}\n can\'t find:{len(db.widgets) - n}')
+    for widget in db.widgets:
+        if widget.id == '2131296564':
+            print(widget.activity)
