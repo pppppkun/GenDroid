@@ -19,15 +19,6 @@ class Device:
         self.install_grant_runtime_permissions(apk_path)
         self.u.app_start(package_name=self.package, wait=True)
 
-    def ui_info_by_package(self):
-        ui_info = self.u.dump_hierarchy()
-        root = et.fromstring(ui_info)
-        try:
-            package_node = et.tostring(root.find(".*[@package='" + self.package + "']")).decode('utf-8')
-        except:
-            package_node = ui_info
-        return package_node
-
     def get_gui(self):
         return self.u.dump_hierarchy()
 

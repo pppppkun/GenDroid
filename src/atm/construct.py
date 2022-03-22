@@ -1,15 +1,4 @@
-"""
-this class will give confidence between query and given node
-"""
-from demo.event import event_factory, VirtualEvent, EventData
-from demo.utils import FunctionWrap
-from collections import deque
-from sentence_transformers import SentenceTransformer, util
-from functools import reduce
-import re
-from collections import namedtuple
 import logging
-import xml.etree.ElementTree as et
 
 construct_log = logging.getLogger('construct')
 construct_log.setLevel(logging.DEBUG)
@@ -19,168 +8,15 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 construct_log_ch.setFormatter(formatter)
 construct_log.addHandler(construct_log_ch)
 
-attributes = {
-    'text',
-    'content-desc',
-    'resource-id'
-}
-
-PLACE_HOLDER = '@'
-
-resource_id_pattern = re.compile(r'.*:id/(.*)')
-NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-
-def predict_use_sbert(description, keys):
-    emd1 = model.encode(description)
-    emd2 = model.encode(keys)
-    cos_sim = sorted(util.cos_sim(emd1, emd2)[0], key=lambda x: -x)
-    return cos_sim
-
-
-def predict_use_bert(description, keys):
-    from model.bert.api import predict_two_sentence
-    # manhattan_sim = [predict_two_sentence(description, key)[0] for key in keys]
-    # manhattan_sim.sort(key=lambda x: -x)
-    manhattan_sim = predict_two_sentence(description, keys)[0]
-    return manhattan_sim
-
-
-def get_most_important_attribute(node: et.Element):
-    if node.get('text') != '':
-        return [node.get('text')]
-    if node.get('content-desc') != '':
-        return [node.get('content-desc')]
-    # resource-id="com.android.systemui:id/navigation_bar_frame"
-    if node.get('resource-id') != '':
-        return [resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_', ' ')]
-    return [PLACE_HOLDER]
-
-
-def get_node_attribute(node: et.Element):
-    d = dict()
-    for key in attributes:
-        d[key] = node.get(key, None)
-    return d
-
-
-def get_node_attribute_values(node: et.Element):
-    text = node.get('text')
-    content_desc = node.get('content-desc')
-    if node.get('resource-id') != '':
-        if resource_id_pattern.match(node.get('resource-id')) is None:
-            resource_id = ''
-        else:
-            resource_id = resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_',
-                                                                                                                ' ')
-    else:
-        resource_id = ''
-    result = [text, content_desc, resource_id]
-    result = list(filter(lambda x: len(x) != 0, result))
-    for i in range(len(result)):
-        if 'fab' in result[i]:
-            result[i] = result[i].replace('fab', '')
-    if len(result) == 0:
-        result.append(PLACE_HOLDER)
-    return result
-
-
-widget_attempt_action_map = {
-    'ImageView': ['click', 'long_click', ],
-    'EditText': ['set_text'],
-    'TextView': ['click'],
-    'Button': ['click', 'long_click', ],
-    'ImageButton': ['click', 'long_click', ],
-    'CheckBox': ['click']
-}
-
-
-def get_action_based_classes(node: et.Element):
-    class_ = node.get('class')
-    class_ = class_[class_.rfind('.') + 1:]
-    if class_ in widget_attempt_action_map:
-        return widget_attempt_action_map[class_]
-    else:
-        return ['click']
-
-
-def average_cos(result):
-    return sum(result) / len(result)
-
-
-non_action_view = {
-    'Layout',
-    'Group',
-    'Recycle',
-    'Scroll'
-}
-
-
-def filter_by_class(node: et.Element):
-    class_ = node.get('class')
-    if class_ is None:
-        return False
-    result = True
-    for view in non_action_view:
-        if view in class_:
-            result = False
-            break
-    return result
-
-
-SELECT_MOST_DIRECT = 'most_direct'
-SELECT_ALL = 'all'
-CALCULATE_MAX = 'max'
-CALCULATE_AVERAGE = 'average'
-SBERT = 'sbert'
-BERT = 'model'
-select_function = {
-    SELECT_MOST_DIRECT: get_most_important_attribute,
-    SELECT_ALL: get_node_attribute_values
-}
-calculate_function = {
-    CALCULATE_MAX: max,
-    CALCULATE_AVERAGE: average_cos
-}
-predict_function = {
-    SBERT: predict_use_sbert,
-    BERT: predict_use_bert
-}
-
 
 class Constructor:
-    def __init__(self, analyst, device, select_strategy=SELECT_ALL, calculate_strategy=CALCULATE_MAX,
-                 predict_model=SBERT):
-        self.select_strategy = select_strategy
-        self.calculate_strategy = calculate_strategy
-        self.predict_model = predict_model
-        self.analyst = analyst
-        self.device = device
-        self.events = []
+    def __init__(self, db):
+        self.db = db
         pass
 
-    def confidence(self, node: et.Element, description):
-        keys = self.select_attribute(node)
-        sim = self.predict(description, keys)
-        return NodeWithConfidence(node, self.calculate_score(sim))
+    def generate_events(self, widgets, action=None):
+        pass
 
-    def select_attribute(self, node):
-        return select_function[self.select_strategy](node)
-
-    def calculate_score(self, score):
-        return calculate_function[self.calculate_strategy](score)
-
-    def predict(self, description, keys):
-        return predict_function[self.predict_model](description, keys)
-
-    def construct(self, v_events):
-        for i in range(len(v_events)-1):
-            source = v_events[i]
-            destination = v_events[i+1]
-            # widgets = get_all_widgets()
-            # calculated similarity between <widgets source>, <widgets destination>
-            #
 
 # # TODO more freestyle description
 # def construct(self, gui, v_event: VirtualEvent):
@@ -233,5 +69,3 @@ if __name__ == '__main__':
     s1 = 'fab create'
     s2 = 'create notify'
     s3 = 'create'
-    print(predict_use_sbert(s1, s2))
-    print(predict_use_sbert(s2, s3))
