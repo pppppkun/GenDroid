@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer, util
 from atm.device import Device
 from atm.utils import FunctionWrap
+from atm.db import DataBase
 import spacy
 import re
 from collections import namedtuple
@@ -75,6 +76,15 @@ def get_node_attribute_values(node: et.Element):
     return result
 
 
+def get_selector_from_dynamic_edge(criteria):
+    a = ['text', 'content-desc', 'resource-id']
+    selectors = dict()
+    for attribute in a:
+        assert attribute in criteria
+        selectors[attribute] = criteria[attribute]
+    return selectors
+
+
 non_action_view = {
     'Layout',
     'Group',
@@ -95,36 +105,6 @@ def filter_by_class(node: et.Element):
     return result
 
 
-# widget_attempt_action_map = {
-#     'ImageView': ['click', 'long_click', ],
-#     'EditText': ['set_text'],
-#     'TextView': ['click'],
-#     'Button': ['click', 'long_click', ],
-#     'ImageButton': ['click', 'long_click', ],
-#     'CheckBox': ['click']
-# }
-#
-#
-# def get_action_based_classes(node: et.Element):
-#     class_ = node.get('class')
-#     class_ = class_[class_.rfind('.') + 1:]
-#     if class_ in widget_attempt_action_map:
-#         return widget_attempt_action_map[class_]
-#     else:
-#         return ['click']
-
-
-def average_cos(result):
-    return sum(result) / len(result)
-
-
-non_action_view = {
-    'Layout',
-    'Group',
-    'Recycle',
-    'Scroll'
-}
-
 SELECT_MOST_DIRECT = 'most_direct'
 SELECT_ALL = 'all'
 CALCULATE_MAX = 'max'
@@ -137,7 +117,7 @@ select_function = {
 }
 calculate_function = {
     CALCULATE_MAX: max,
-    CALCULATE_AVERAGE: average_cos
+    CALCULATE_AVERAGE: lambda x: sum(x) / len(x)
 }
 predict_function = {
     SBERT: predict_use_sbert,
@@ -153,18 +133,68 @@ class Analyst:
         self.predict_model = predict_model
         self.device = device
         self.graph = graph
+        self.db = DataBase('', '', '')
 
     def calculate_similarity(self, description, widget):
         pass
 
-    def calculate_path_between_activity(self, source, target, description):
-        pass
+    def calculate_path_between_activity(self, source, target, description, widget):
+        paths = self.graph.find_path_between_activity(source, target)
+        candidate = []
+
+        def calculate_weight(path, score):
+            import numpy as np
+            return np.average(score) / (1 + np.log2(len(path)))
+
+        for path in paths:
+            cp = self.device.set_checkpoint()
+            widgets, score = self.valid_path(path, description, widget)
+            if len(widgets) != 0:
+                candidate.append([widgets, score])
+            self.device.reset(cp)
+        # TODO
+        if len(candidate) >= 1:
+            for path in candidate:
+                p, s = path[0], path[1]
+                s.append(self.confidence(widget, description))
+                path.append(calculate_weight(p, s))
+            sorted(candidate, key=lambda x: -x[2])
+            return candidate[0]
+        else:
+            return None
 
     def dynamic_match_widget(self, description):
         gui = self.device.get_gui()
         root = et.fromstring(gui)
         analyst_log.info('transfer gui and record to model')
 
+        f = FunctionWrap((_node for _node in root.iter()))
+        f.append(
+            filter,
+            lambda _node: filter_by_class(_node)
+        ).append(
+            map,
+            lambda x: self.confidence(x, description)
+        ).append(
+            sorted,
+            lambda x: -x.confidence
+        )
+        return f.do()
+
+    def static_match_activity(self, description):
+        f = FunctionWrap(self.db.widgets)
+        f.append(
+            map,
+            lambda x: self.confidence(x, description)
+        ).append(
+            sorted,
+            lambda x: -x.confidence
+        )
+        candidate = f.do()
+        return candidate
+
+    @classmethod
+    def pos_analysis(cls, description):
         nlp = spacy.load('en_core_web_sm')
         doc = nlp(description)
         actions = []
@@ -178,28 +208,59 @@ class Analyst:
             ui_infos.append(ui_info)
         if len(ui_infos) == 0:
             ui_infos.append(description)
-        for ui_info in ui_infos:
-            pass
+        return actions, ui_infos
 
-        f = FunctionWrap((_node for _node in root.iter()))
-        f.append(
-            filter,
-            lambda _node: filter_by_class(_node)
-        ).append(
-            map,
-            lambda x: self.confidence(x, description)
-        ).append(
-            sorted,
-            lambda x: -x.confidence
-        )
-
-    def static_match_activity(self, description):
-        pass
-
-    def valid_path(self):
-        pass
+    def valid_path(self, path, description, w_target):
+        stepping = []
+        score = []
+        for index, node in enumerate(path):
+            if '(' in node:
+                if node.startswith('D@'):
+                    # D@a=b&c=e ${action}
+                    # k_v -> a = b
+                    action = node.split()[1]
+                    criteria = dict(
+                        map(lambda k_v: (k_v.split('=')[0], k_v.split('=')[1]), node.split()[0][2:].split('&')))
+                    analyst_log.log('D@criteria: ' + criteria.__str__())
+                    widget = self.device.select_widget_wrapper(get_selector_from_dynamic_edge(criteria))
+                else:
+                    # resource-id actually
+                    action = node.split('(')[1][:-1]
+                    widget_name = self.db.get_widget_name_from_id(node.split()[0])
+                    widget = self.device.select_widget_wrapper({'resource-id': widget_name})
+                if not widget:
+                    return False, []
+                    # if not widget:
+                #     if path[:index + 1] not in invalid_paths:
+                #         invalid_paths.append(path[: index + 1])
+                #     return None
+                # TODO
+                pre_info = self.device.app_current()
+                if 'Long' in action or 'long' in action:
+                    widget.long_click()
+                else:
+                    widget.click()
+                post_info = self.device.app_current()
+                stepping.append(widget)
+                score.append(self.confidence(widget, description))
+                self.db.update_widget(widget, pre_info['activity'])
+                self.graph.add_edge(pre_info['package'] + pre_info['activity'],
+                                    post_info['package'] + post_info['activity'], widget)
+        # check target widget exists
+        # if self.device.exists_widget(w_target):
+        #     # may get bro widget.
+        #     # TODO
+        #     # cache_nearest_button_to_text
+        #     return True, score
+        # else:
+        #     return False, []
+        if self.device.exists_widget(w_target):
+            return stepping, score
+        else:
+            return [], []
 
     def confidence(self, node: et.Element, description):
+        actions, ui_infos = self.pos_analysis(description)
         keys = self.select_attribute(node)
         sim = self.predict(description, keys)
         return NodeWithConfidence(node, self.calculate_score(sim))
