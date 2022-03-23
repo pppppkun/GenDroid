@@ -88,6 +88,11 @@ class DataBase:
             return self.widget_bidict[w_name]
         return None
 
+    def get_widget_name_from_id(self, w_id):
+        if w_id in self.widget_bidict.inverse:
+            return self.widget_bidict.inverse[w_id]
+        return None
+
     def extract_layout(self):
         name_id_map = dict()
         e = et.parse(os.path.join(self.decompile_folder, 'res', 'values', 'public.xml')).getroot()
@@ -211,7 +216,25 @@ class DataBase:
             return self.cid2activity[cid]
         else:
             return None
+
     # def get_all_widget(self):
+
+    def update_widget(self, widget, activity):
+        is_in = False
+        for w in self.widgets:
+            if w == widget:
+                is_in = True
+                if w.activity == '':
+                    w.activity = activity
+        if not is_in:
+            self.widgets.append(widget)
+
+    def get_all_widgets(self):
+        result = []
+        for widget in self.widgets:
+            if widget.activity != '' and widget.activity is not None:
+                result.append(widget)
+        return result
 
 
 if __name__ == '__main__':
