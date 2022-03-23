@@ -18,6 +18,7 @@ class Device:
             self.u.app_uninstall(self.package)
         self.install_grant_runtime_permissions(apk_path)
         self.u.app_start(package_name=self.package, wait=True)
+        self.history = []
 
     def get_gui(self):
         return self.u.dump_hierarchy()
@@ -52,6 +53,16 @@ class Device:
         temp = dict(map(lambda x: (translate[x], selector[x]), selector))
         return self.u(**temp)
 
+    def select_widget_wrapper(self, selector):
+        widget = self.select_widget(selector).info
+        n_w = dict()
+        n_w['class'] = widget['className']
+        n_w['content-desc'] = widget['contentDescription']
+        n_w['package'] = widget['packageName']
+        n_w['resource-id'] = widget['resourceName']
+        n_w['text'] = "" if widget['text'] is None else widget['text']
+        n_w['activity'] = self.ac
+
     def exists_widget(self, selector):
         widget = self.select_widget(selector)
         return widget.exists
@@ -62,6 +73,9 @@ class Device:
 
     def app_current(self):
         return self.u.app_current
+
+    def activity(self):
+        return self.u.app_current['activity']
 
     # need a more efficiency way.
     def stop_and_restart(self, events=None):
@@ -87,9 +101,17 @@ class Device:
         if ret.exit_code == 0:
             return ret.output
 
+    def reset(self, checkpoint):
+        self.history = self.history[:checkpoint]
+        self.stop_and_restart(events=self.history)
+
+    def set_checkpoint(self):
+        return len(self.history)
+
 
 if __name__ == '__main__':
     # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
     # app_node = d.get_ui_info_by_package()
     d = u2.connect()
-    # d.info
+    var = d(resourceId='org.secuso.privacyfriendlytodolist:id/fab_new_task').info
+    print(var)

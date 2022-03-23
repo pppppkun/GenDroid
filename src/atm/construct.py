@@ -1,3 +1,5 @@
+from atm.widget import Widget
+from atm.db import DataBase
 import logging
 
 construct_log = logging.getLogger('construct')
@@ -15,6 +17,10 @@ class Constructor:
         pass
 
     def generate_events(self, widgets, action=None):
+        work_list = []
+        if type(widgets) == Widget:
+            work_list.append(widgets)
+        # TODO
         pass
 
 
