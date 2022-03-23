@@ -122,7 +122,10 @@ class CallGraphParser:
         """add a dynamically found edge into G"""
         # nx automatically takes care of non-existing / duplicated node issue when adding an edge
         # every node is unique in a graph by its name
-
+        w_stepping['content-desc'] = w_stepping['contentDescription']
+        w_stepping['resource-id'] = w_stepping['resourceName']
+        if w_stepping['text'] is None:
+            w_stepping['text'] = ''
         """
         add node which create activity_from/to
         """
@@ -210,7 +213,7 @@ NODE_TYPE = [
 ]
 
 
-class Node:
+class Edge:
     def __init__(self, type, attrib, action):
         self.type = type
         self.attrib = attrib
@@ -222,14 +225,15 @@ class Node:
     def to_graph_node(self):
         pass
 
+
 if __name__ == '__main__':
     cgp = CallGraphParser(static_info_folder='/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out')
     # for node in cgp.G.nodes:
     #     print(node)
     # for edge in cgp.G.edges:
     #     print(edge[0], edge[1], cgp.G.edges[edge]['label'])
-    print(cgp.activity_to_nodes.keys())
-    print(cgp.activity_to_onCreate_node)
+    # print(cgp.activity_to_nodes.keys())
+    # print(cgp.activity_to_onCreate_node)
     for path in cgp.get_paths_between_activities('Root',
                                                  'org.secuso.privacyfriendlytodolist.view.dialog.ProcessTodoTaskDialog'):
         print(path)
