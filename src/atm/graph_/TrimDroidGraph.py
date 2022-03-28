@@ -1,5 +1,5 @@
 from abc import ABC
-from atm.graph.graph import Graph, graph_log
+from atm.graph_.graph import Graph, graph_log
 from collections import deque, namedtuple, defaultdict
 from networkx.exception import NetworkXNoPath
 import networkx as nx
@@ -133,7 +133,7 @@ class TrimDroidGraph(Graph, ABC):
     def add_edge(self, act_from, act_to, w_stepping):
         """add a dynamically found edge into G"""
         # nx automatically takes care of non-existing / duplicated node issue when adding an edge
-        # every node is unique in a graph by its name
+        # every node is unique in a graph_ by its name
 
         """
         add node which create activity_from/to

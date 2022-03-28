@@ -83,16 +83,6 @@ class DataBase:
                                 d[attr] = ''
                         self.widgets.append(Widget(d))
 
-    def get_widget_id_from_name(self, w_name):
-        if w_name in self.widget_bidict:
-            return self.widget_bidict[w_name]
-        return None
-
-    def get_widget_name_from_id(self, w_id):
-        if w_id in self.widget_bidict.inverse:
-            return self.widget_bidict.inverse[w_id]
-        return None
-
     def extract_layout(self):
         name_id_map = dict()
         e = et.parse(os.path.join(self.decompile_folder, 'res', 'values', 'public.xml')).getroot()
@@ -205,7 +195,22 @@ class DataBase:
             return value.split('/')[-1]
         return value
 
+    def get_action_from_history(self, clazz):
+        pass
+
+    def get_widget_id_from_name(self, w_name):
+        w_name = self.decode(w_name)
+        if w_name in self.widget_bidict:
+            return self.widget_bidict[w_name]
+        return None
+
+    def get_widget_name_from_id(self, w_id):
+        if w_id in self.widget_bidict.inverse:
+            return self.widget_bidict.inverse[w_id]
+        return None
+
     def get_layout_id_from_name(self, name):
+        name = self.decode(name)
         if name in self.layout_bidict:
             return self.layout_bidict[name]
         else:
@@ -229,6 +234,9 @@ class DataBase:
         if not is_in:
             self.widgets.append(widget)
 
+    def update_by_activity(self):
+        pass
+
     def get_all_widgets(self):
         result = []
         for widget in self.widgets:
@@ -238,14 +246,9 @@ class DataBase:
 
 
 if __name__ == '__main__':
-    db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/decompile',
-                  '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out',
-                  'org.secuso.privacyfriendlytodolist')
+    db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/currency/decompile',
+                  '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/currency/out',
+                  'org.billthefarmer.currency')
     n = 0
     for widget in db.widgets:
-        if widget.activity != '':
-            n += 1
-    print(f'has activity:{n}\n can\'t find:{len(db.widgets) - n}')
-    for widget in db.widgets:
-        if widget.id == '2131296564':
-            print(widget.activity)
+        print(widget.resource_id)

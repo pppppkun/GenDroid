@@ -1,5 +1,6 @@
 from atm.widget import Widget
 from atm.db import DataBase
+from atm.event import build_event
 import logging
 
 construct_log = logging.getLogger('construct')
@@ -10,68 +11,38 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 construct_log_ch.setFormatter(formatter)
 construct_log.addHandler(construct_log_ch)
 
+widget_attempt_action_map = {
+    'ImageView': ['click'],
+    'EditText': ['set_text'],
+    'TextView': ['click'],
+    'Button': ['click'],
+    'ImageButton': ['click'],
+    'CheckBox': ['click']
+}
+
 
 class Constructor:
-    def __init__(self, db):
+    def __init__(self, db: DataBase):
         self.db = db
         pass
 
-    def generate_events(self, widgets, action=None):
+    def generate_events(self, widgets, action=None, data=None):
         work_list = []
         if type(widgets) == Widget:
             work_list.append(widgets)
-        # TODO
-        pass
-
-
-# # TODO more freestyle description
-# def construct(self, gui, v_event: VirtualEvent):
-#
-#     ui_info = v_event.description
-#     root = et.fromstringlist(gui)
-#     construct_log.info('transfer gui and record to model')
-#
-#     def create_event(node_with_confidence, data=None):
-#         result = list()
-#         selector = get_node_attribute(node_with_confidence.node)
-#         # action should study from history (ie same widget have same action, new widget should consider the
-#         # static analysis result)
-#         # action = self.analyst.action_analysis(node_with_confidence.node)
-#         action = get_action_based_classes(node_with_confidence.node)[0]
-#         if action == 'set_text' and data is None:
-#             data = {'text': 'place_holder'}
-#         event_data = EventData(action=action, selector=selector, data=data)
-#         try:
-#             event_ = event_factory[action](event_data)
-#             event_.confidence = node_with_confidence.confidence
-#             result.append(event_)
-#             return result
-#         except:
-#             construct_log.error(action, selector, data)
-#             return []
-#
-#     f = FunctionWrap((_node for _node in root.iter()))
-#     f.append(
-#         filter,
-#         lambda _node: filter_by_class(_node)
-#     ).append(
-#         map,
-#         lambda x: self.confidence(x, ui_info)
-#     ).append(
-#         sorted,
-#         lambda x: -x.confidence
-#     ).append(
-#         map,
-#         lambda x: create_event(x, v_event.data)
-#     ).append(
-#         reduce,
-#         lambda x, y: x + y
-#     )
-#     events = f.do()
-#     return deque(events)
-
-
-if __name__ == '__main__':
-    s1 = 'fab create'
-    s2 = 'create notify'
-    s3 = 'create'
+        events = []
+        for widget in work_list:
+            clazz = widget.get_class()
+            candidate_action = None
+            if action:
+                candidate_action = action
+            else:
+                a = self.db.get_action_from_history(widget.to_selector())
+                if a != None:
+                    candidate_action = a
+                else:
+                    if clazz in widget_attempt_action_map:
+                        candidate_action = widget_attempt_action_map[clazz][0]
+            event = build_event(candidate_action, widget.get_attribute(), data)
+            events.append(event)
+        return events

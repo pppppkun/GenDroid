@@ -72,10 +72,10 @@ class Device:
             self.u.press(key='back')
 
     def app_current(self):
-        return self.u.app_current
+        return self.u.app_current()
 
     def activity(self):
-        return self.u.app_current['activity']
+        return self.u.app_current()['activity']
 
     # need a more efficiency way.
     def stop_and_restart(self, events=None):

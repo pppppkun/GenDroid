@@ -7,8 +7,8 @@ from collections import defaultdict
 
 
 class CallGraphParser:
-    def __init__(self, static_info_folder):
-        self.static_info_folder = static_info_folder
+    def __init__(self, atm_folder):
+        self.atm_folder = atm_folder
         self.activity_to_nodes = defaultdict(list)
         self.activity_to_onCreate_node = dict()
         self.self_loops = defaultdict(list)
@@ -17,8 +17,8 @@ class CallGraphParser:
         self.group_nodes()
 
     def get_graph_from_dot_file(self):
-        if os.path.exists(os.path.join(self.static_info_folder, 'atm.gv')):
-            graphs = pydot.graph_from_dot_file(os.path.join(self.static_info_folder, 'atm.gv'))
+        if os.path.exists(os.path.join(self.atm_folder, 'atm.gv')):
+            graphs = pydot.graph_from_dot_file(os.path.join(self.atm_folder, 'atm.gv'))
             (g2,) = graphs
             G = nx.nx_pydot.from_pydot(g2)
             # remove edges with label "GUI (NULL)"
@@ -121,7 +121,7 @@ class CallGraphParser:
     def add_edge(self, act_from, act_to, w_stepping):
         """add a dynamically found edge into G"""
         # nx automatically takes care of non-existing / duplicated node issue when adding an edge
-        # every node is unique in a graph by its name
+        # every node is unique in a graph_ by its name
         w_stepping['content-desc'] = w_stepping['contentDescription']
         w_stepping['resource-id'] = w_stepping['resourceName']
         if w_stepping['text'] is None:
@@ -227,13 +227,14 @@ class Edge:
 
 
 if __name__ == '__main__':
-    cgp = CallGraphParser(static_info_folder='/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out')
+    cgp = CallGraphParser(atm_folder='/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out')
+    # print(cgp.activity_to_nodes['org.secuso.privacyfriendlytodolist.view.MainActivity'])
     # for node in cgp.G.nodes:
     #     print(node)
     # for edge in cgp.G.edges:
     #     print(edge[0], edge[1], cgp.G.edges[edge]['label'])
     # print(cgp.activity_to_nodes.keys())
     # print(cgp.activity_to_onCreate_node)
-    for path in cgp.get_paths_between_activities('Root',
-                                                 'org.secuso.privacyfriendlytodolist.view.dialog.ProcessTodoTaskDialog'):
-        print(path)
+    # for path in cgp.get_paths_between_activities('Root',
+    #                                              'org.secuso.privacyfriendlytodolist.view.dialog.ProcessTodoTaskDialog'):
+    #     print(path)

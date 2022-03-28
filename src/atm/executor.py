@@ -16,10 +16,10 @@ class Executor:
     # 4. calculate paths from activity[after execute w1] to activity[which has w2]
     # widgets = get_all_widgets()
     # calculated similarity between <widgets source>, <widgets destination>
-    def execute(self, v_events):
-        for i in range(len(v_events) - 1):
-            src_des = v_events[i]
-            tgt_des = v_events[i + 1]
+    def execute(self, descriptions):
+        for i in range(len(descriptions) - 1):
+            src_des = descriptions[i]
+            tgt_des = descriptions[i + 1]
             src_widget = self.analyst.dynamic_match_widget(src_des)[0]
             src_event = self.constructor.generate_events(src_widget)
             self.device.execute(src_event)

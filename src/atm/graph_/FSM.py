@@ -1,5 +1,5 @@
 from abc import ABC
-from atm.graph.graph import Graph, graph_log
+from atm.graph_.graph import Graph, graph_log
 from collections import deque, namedtuple
 from networkx.exception import NetworkXNoPath
 import networkx as nx

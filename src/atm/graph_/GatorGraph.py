@@ -1,5 +1,5 @@
 from abc import ABC
-from atm.graph.graph import Graph, graph_log
+from atm.graph_.graph import Graph, graph_log
 from collections import deque, namedtuple
 from networkx.exception import NetworkXNoPath
 import networkx as nx
@@ -16,8 +16,8 @@ class GatorGraph(Graph, ABC):
 
     def import_graph(self):
 
-        graph_ = os.path.join(self.graph_folder, 'graph.json')
-        assert os.path.exists(os.path.join(self.graph_folder, 'graph.json'))
+        graph_ = os.path.join(self.graph_folder, 'graph_.json')
+        assert os.path.exists(os.path.join(self.graph_folder, 'graph_.json'))
         graph_ = json.load(open(graph_, 'r'))
         nodes = graph_['nodes']
         edges = graph_['edges']

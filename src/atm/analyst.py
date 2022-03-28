@@ -1,7 +1,8 @@
 from sentence_transformers import SentenceTransformer, util
 from atm.device import Device
-from atm.utils import FunctionWrap
+from atm.utils import FunctionWrap, IRRELEVANT_WORDS
 from atm.db import DataBase
+from atm.widget import Widget
 import spacy
 import re
 from collections import namedtuple
@@ -16,10 +17,11 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 analyst_log_ch.setFormatter(formatter)
 analyst_log.addHandler(analyst_log_ch)
 
-attributes = {
+KEY_ATTRIBUTES = {
     'text',
     'content-desc',
-    'resource-id'
+    'resource-id',
+    'hint'
 }
 
 PLACE_HOLDER = '@'
@@ -76,6 +78,22 @@ def get_node_attribute_values(node: et.Element):
     return result
 
 
+def get_attribute_based_class(node: et.Element):
+    candidate = None
+    if 'text' in node.get('class').lower():
+        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES]
+    elif 'image' in node.get('class').lower():
+        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES.difference('text')]
+    elif 'button' in node.get('class').lower():
+        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES]
+    else:
+        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES]
+    candidate = list(filter(lambda x: x != '' and x is not None, candidate))
+    if len(candidate) == 0:
+        candidate.append(PLACE_HOLDER)
+    return candidate
+
+
 def get_selector_from_dynamic_edge(criteria):
     a = ['text', 'content-desc', 'resource-id']
     selectors = dict()
@@ -83,6 +101,19 @@ def get_selector_from_dynamic_edge(criteria):
         assert attribute in criteria
         selectors[attribute] = criteria[attribute]
     return selectors
+
+
+def postprocess_keys(keys):
+    result = []
+    for key in keys:
+        key = str(key)
+        words = key.split('_')
+        key = []
+        for word in words:
+            if word not in IRRELEVANT_WORDS:
+                key.append(word)
+        result.append(' '.join(key))
+    return result
 
 
 non_action_view = {
@@ -107,13 +138,15 @@ def filter_by_class(node: et.Element):
 
 SELECT_MOST_DIRECT = 'most_direct'
 SELECT_ALL = 'all'
+SELECT_BASED_CLASS = 'class'
 CALCULATE_MAX = 'max'
 CALCULATE_AVERAGE = 'average'
 SBERT = 'sbert'
 BERT = 'model'
 select_function = {
     SELECT_MOST_DIRECT: get_most_important_attribute,
-    SELECT_ALL: get_node_attribute_values
+    SELECT_ALL: get_node_attribute_values,
+    SELECT_BASED_CLASS: get_attribute_based_class
 }
 calculate_function = {
     CALCULATE_MAX: max,
@@ -126,14 +159,15 @@ predict_function = {
 
 
 class Analyst:
-    def __init__(self, device: Device, graph, select_strategy=SELECT_ALL, calculate_strategy=CALCULATE_MAX,
+    def __init__(self, device: Device, graph, data_base: DataBase, select_strategy=SELECT_BASED_CLASS,
+                 calculate_strategy=CALCULATE_AVERAGE,
                  predict_model=SBERT):
         self.select_strategy = select_strategy
         self.calculate_strategy = calculate_strategy
         self.predict_model = predict_model
         self.device = device
         self.graph = graph
-        self.db = DataBase('', '', '')
+        self.db = data_base
 
     def calculate_similarity(self, description, widget):
         pass
@@ -156,7 +190,7 @@ class Analyst:
         if len(candidate) >= 1:
             for path in candidate:
                 p, s = path[0], path[1]
-                s.append(self.confidence(widget, description))
+                # s.append(self.confidence(widget, description))
                 path.append(calculate_weight(p, s))
             sorted(candidate, key=lambda x: -x[2])
             return candidate[0]
@@ -179,7 +213,10 @@ class Analyst:
             sorted,
             lambda x: -x.confidence
         )
-        return f.do()
+        # return f.do()
+        queue = f.do()
+        widget = Widget(queue[0].node.attrib)
+        return widget
 
     def static_match_activity(self, description):
         f = FunctionWrap(self.db.widgets)
@@ -203,9 +240,13 @@ class Analyst:
                 actions.append(token)
         ui_infos = []
         for action in actions:
-            ui_info = [child for child in action.children][0]
-            ui_info = ' '.join([child.text for child in ui_info.subtree])
-            ui_infos.append(ui_info)
+            ui_info = [child for child in action.children]
+            if len(ui_info) == 0:
+                ui_infos.append('')
+            else:
+                ui_info = ui_info[0]
+                ui_info = ' '.join([child.text for child in ui_info.subtree])
+                ui_infos.append(ui_info)
         if len(ui_infos) == 0:
             ui_infos.append(description)
         return actions, ui_infos
@@ -261,9 +302,31 @@ class Analyst:
 
     def confidence(self, node: et.Element, description):
         actions, ui_infos = self.pos_analysis(description)
-        keys = self.select_attribute(node)
-        sim = self.predict(description, keys)
-        return NodeWithConfidence(node, self.calculate_score(sim))
+
+        # child
+        childs = list(node)
+        childs.append(node)
+        max_score = -1
+        max_node = None
+        for candidate in childs:
+            self.db.get_widget_id_from_name(candidate.get('resource-id'))
+            keys = self.select_attribute(candidate)
+            postprocess_keys(keys)
+            try:
+                sim = self.predict(description, keys)
+            except RuntimeError:
+                analyst_log.error(f'cannot be multiplied between: {keys} {description}')
+                continue
+            score = self.calculate_score(sim)
+            if score > max_score:
+                max_score = score
+                max_node = candidate
+            elif score == max_score:
+                analyst_log.warning(f'same score between: {max_node} {candidate}')
+        return NodeWithConfidence(max_node, max_score)
+
+    def help(self):
+        pass
 
     def select_attribute(self, node):
         return select_function[self.select_strategy](node)
@@ -273,3 +336,15 @@ class Analyst:
 
     def predict(self, description, keys):
         return predict_function[self.predict_model](description, keys)
+
+
+if __name__ == '__main__':
+    description = 'create new task'
+    t1 = 'ADD NEW TASK &gt;'
+    r1 = 'second alert'
+    t2 = ''
+    r2 = 'new task'
+    s1 = (predict_use_sbert(description, t1)[0] + predict_use_sbert(description, r1)[0]) / 2
+    s2 = (predict_use_sbert(description, t2)[0] + predict_use_sbert(description, r2)[0]) / 2
+    print(s1)
+    print(s2)

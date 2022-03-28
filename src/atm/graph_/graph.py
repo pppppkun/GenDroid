@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import logging
 
-graph_log = logging.getLogger('graph')
+graph_log = logging.getLogger('graph_')
 graph_log.setLevel(logging.DEBUG)
 graph_log_ch = logging.StreamHandler()
 graph_log_ch.setLevel(logging.DEBUG)
@@ -44,7 +44,7 @@ class Graph:
     @abstractmethod
     def add_node(self, node):
         """
-        this method will add a node to graph
+        this method will add a node to graph_
         :param node: must have id and other information will be referred inside method.
         :return:
         """

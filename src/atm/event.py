@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from collections import namedtuple
 
 EventData = namedtuple('EventData', ['action', 'selector', 'data'])
@@ -64,6 +63,12 @@ send_event_to_device = {
 }
 
 
+def build_event(action, selector, data=None):
+    event_data = EventData(action=action, selector=selector, data=data)
+    event = event_factory[action](event_data)
+    return event
+
+
 class Event:
     def __init__(self, action, **kwargs):
         self.text = None
@@ -74,7 +79,9 @@ class Event:
             self.__setattr__(i, kwargs[i])
 
     def __str__(self):
-        return 'Event action={action}, selector={selector} confidence={confidence}'.format(action=self.action, selector=self.selector, confidence=self.confidence)
+        return 'Event action={action}, selector={selector} confidence={confidence}'.format(action=self.action,
+                                                                                           selector=self.selector,
+                                                                                           confidence=self.confidence)
 
     def to_dict(self):
         return {'action': self.action, 'selector': self.selector, 'data': self.text}
@@ -95,15 +102,6 @@ class Event:
             return 'd({}).{}()'.format(','.join(param), self.action)
         else:
             return 'd({}).{}(\'{}\')'.format(','.join(param), self.action, self.text)
-
-
-class VirtualEvent:
-    def __init__(self, description, data=None):
-        self.description = description
-        self.data = data
-
-    def __str__(self):
-        return 'Virtual Event={description}'.format(description=self.description)
 
 
 if __name__ == '__main__':

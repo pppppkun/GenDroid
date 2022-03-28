@@ -1,39 +1,13 @@
 import os
-from demo.record import record_events
-import time
+import logging
 
-
-def get_info_and_screenshot(device):
-    import os
-    return device.u.app_current(), device.u.screenshot(
-        os.path.join('img', str(int(time.time())) + '.jpg')), device.u.dump_hierarchy()
-
-
-def build_event(selector, action, data=None):
-    pass
-
-
-def execute_and_record(description_, events, device, executor):
-    pre_info, pre_screenshot, pre_xml = get_info_and_screenshot(device)
-    widgets = []
-    events_ = []
-    for event in events:
-        widgets.append(device.select_widget(event.selector).info)
-        events_.append(event.to_dict())
-        executor.direct_execute(event)
-    device.u.sleep(3)
-    post_info, post_screenshot, post_xml = get_info_and_screenshot(device)
-    record_events(
-        description=description_,
-        event_series=events_,
-        widgets=widgets,
-        pre_screenshot=pre_screenshot,
-        pre_device_info=pre_info,
-        post_screenshot=post_screenshot,
-        post_device_info=post_info,
-        pre_xml=pre_xml,
-        post_xml=post_xml
-    )
+api_log = logging.getLogger('api')
+api_log.setLevel(logging.DEBUG)
+api_log_ch = logging.StreamHandler()
+api_log_ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+api_log_ch.setFormatter(formatter)
+api_log.addHandler(api_log_ch)
 
 
 def set_app(apk_folder, app_name):
@@ -48,22 +22,42 @@ def set_app(apk_folder, app_name):
     apk = os.path.join(apk_folder, app_name + ".apk")
     decompile = os.path.join(apk_folder, 'decompile')
     out = os.path.join(apk_folder, 'out')
+    api_log.info(f'mkdir {decompile}, {out}')
     os.system(f'mkdir {decompile}')
     os.system(f'mkdir {out}')
-    os.system(f'apktool d {apk} -f -o {decompile}')
-    os.system(f'java -jar {td_path} {apk_folder} {app_name} {out}')
+    api_log.info(f'decompiler {apk} to {decompile}')
+    os.system(f'apktool d {apk} -f -o {decompile} > /dev/null')
+    api_log.info(f'Analysis ATM using TrimDroid to {out}')
+    os.system(f'java -jar {td_path} {apk_folder} {app_name} {out} > /dev/null')
     pass
 
 
 class Tester:
-    def __init__(self, apk_path):
+    def __init__(self, apk_folder, app_name):
+        set_app(apk_folder, app_name)
+        from atm.device import Device
+        from atm.executor import Executor
+        from atm.db import DataBase
+        from atm.analyst import Analyst
+        from atm.graph import CallGraphParser
+        from atm.construct import Constructor
+        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'))
+        self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
+                             atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
+        self.__graph = CallGraphParser(atm_folder=os.path.join(apk_folder, 'out'))
+        self.__analyst = Analyst(device=self.__device, graph=self.__graph, data_base=self.__db)
+        self.__constructor = Constructor(db=self.__db)
+        self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
+        self.__descriptions = []
         pass
 
     def add_description(self, description, data=None):
-        pass
+        self.__descriptions.append(description)
+        return self
 
     def construct(self):
-        pass
+        self.__executor.execute(self.__descriptions)
+        return self
 
     def print_script(self):
-        pass
+        return self

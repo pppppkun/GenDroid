@@ -4,8 +4,8 @@ class Widget:
         self.content_desc = d['content-desc']
         self.resource_id = d['resource-id']
         self.text = d['text']
-        self.hint = d['hint']
-        self.activity = d['activity']
+        self.activity = d['hint'] if 'hint' in d else None
+        self.activity = d['activity'] if 'activity' in d else None
         self.package = d['package']
         # different with resource-id.
         # self.id is Integer.
@@ -17,3 +17,13 @@ class Widget:
     @classmethod
     def get_attribute(cls):
         return ['class', 'content-desc']
+
+    def get_class(self):
+        return self.class_
+
+    def to_selector(self):
+        return {
+            'resource-id': self.resource_id,
+            'content-desc': self.content_desc,
+            'text': self.text
+        }
