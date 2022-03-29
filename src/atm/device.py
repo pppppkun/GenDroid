@@ -6,13 +6,14 @@ from androguard.core.bytecodes.apk import APK
 
 
 class Device:
-    def __init__(self, apk_path, serial=None):
+    def __init__(self, apk_path, graph, serial=None):
         if serial:
             self.u = u2.connect(serial)
         else:
             self.u = u2.connect()
         apk_ = APK(apk_path)
         self.apk_path = apk_path
+        self.graph = graph
         self.package = apk_.get_package()
         if apk_.get_package() in self.get_all_installed_package():
             self.u.app_uninstall(self.package)
@@ -24,17 +25,25 @@ class Device:
         return self.u.dump_hierarchy()
 
     def info(self):
-        return self.u.info
+        info = self.u.info
+        info['gui'] = self.get_gui()
+        return info
 
+    # TODO add_edge and add_node need to be add here to prevent scattered and difficult management
     def execute(self, event):
         try:
             if type(event) == Event:
-                send_event_to_device[event.action](self, event)
+                event = [event]
+            for e in event:
+                pre_info = self.info()
+                send_event_to_device[e.action](self, event)
                 self.u.sleep(2)
-            elif type(event) == list:
-                for e in event:
-                    send_event_to_device[e.action](self, event)
-                    self.u.sleep(2)
+                post_info = self.info()
+                self.graph.add_edge(
+                    pre_info,
+                    post_info,
+                    e
+                )
             if self.u.info['currentPackageName'] != self.package:
                 return self.get_gui(), False
             self.close_keyboard()
@@ -61,7 +70,8 @@ class Device:
         n_w['package'] = widget['packageName']
         n_w['resource-id'] = widget['resourceName']
         n_w['text'] = "" if widget['text'] is None else widget['text']
-        n_w['activity'] = self.ac
+        n_w['activity'] = self.activity()
+        return n_w
 
     def exists_widget(self, selector):
         widget = self.select_widget(selector)
