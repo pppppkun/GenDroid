@@ -1,5 +1,6 @@
 import os
 import logging
+from atm.event import VirtualEvent
 
 api_log = logging.getLogger('api')
 api_log.setLevel(logging.DEBUG)
@@ -39,12 +40,14 @@ class Tester:
         from atm.executor import Executor
         from atm.db import DataBase
         from atm.analyst import Analyst
-        from atm.graph import CallGraphParser
+        from atm.FSM import FSM
         from atm.construct import Constructor
-        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'))
+        from atm.confidence import Confidence
+        self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'out'))
+        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
                              atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
-        self.__graph = CallGraphParser(atm_folder=os.path.join(apk_folder, 'out'))
+        self.__confidence = Confidence()
         self.__analyst = Analyst(device=self.__device, graph=self.__graph, data_base=self.__db)
         self.__constructor = Constructor(db=self.__db)
         self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
@@ -52,7 +55,8 @@ class Tester:
         pass
 
     def add_description(self, description, data=None):
-        self.__descriptions.append(description)
+        ve = VirtualEvent(description, data)
+        self.__descriptions.append(ve)
         return self
 
     def construct(self):

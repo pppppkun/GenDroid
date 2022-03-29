@@ -26,7 +26,7 @@ class Constructor:
         self.db = db
         pass
 
-    def generate_events(self, widgets, action=None, data=None):
+    def generate_events_from_widget(self, widgets, action=None, data=None):
         work_list = []
         if type(widgets) == Widget:
             work_list.append(widgets)
@@ -38,11 +38,11 @@ class Constructor:
                 candidate_action = action
             else:
                 a = self.db.get_action_from_history(widget.to_selector())
-                if a != None:
+                if a is not None:
                     candidate_action = a
                 else:
                     if clazz in widget_attempt_action_map:
                         candidate_action = widget_attempt_action_map[clazz][0]
-            event = build_event(candidate_action, widget.get_attribute(), data)
+            event = build_event(candidate_action, widget.to_selector(), data)
             events.append(event)
         return events

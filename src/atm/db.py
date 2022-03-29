@@ -222,8 +222,6 @@ class DataBase:
         else:
             return None
 
-    # def get_all_widget(self):
-
     def update_widget(self, widget, activity):
         is_in = False
         for w in self.widgets:
@@ -246,9 +244,12 @@ class DataBase:
 
 
 if __name__ == '__main__':
-    db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/currency/decompile',
-                  '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/currency/out',
+    db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/decompile',
+                  '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out',
                   'org.billthefarmer.currency')
     n = 0
+    atm = open('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out/atm.gv', 'r').read()
     for widget in db.widgets:
-        print(widget.resource_id)
+        if 'EditText' in widget.get_class():
+            if widget.id in atm:
+                print(widget.resource_id, widget.id)

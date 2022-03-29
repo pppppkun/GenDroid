@@ -16,19 +16,18 @@ class Executor:
     # 4. calculate paths from activity[after execute w1] to activity[which has w2]
     # widgets = get_all_widgets()
     # calculated similarity between <widgets source>, <widgets destination>
-    def execute(self, descriptions):
-        for i in range(len(descriptions) - 1):
-            src_des = descriptions[i]
-            tgt_des = descriptions[i + 1]
+    def execute(self, ves):
+        for i in range(len(ves) - 1):
+            src_des = ves[i].description
+            tgt_des = ves[i + 1].description
             src_widget = self.analyst.dynamic_match_widget(src_des)[0]
-            src_event = self.constructor.generate_events(src_widget)
+            src_event = self.constructor.generate_events_from_widget(src_widget, ves[i].data)
             self.device.execute(src_event)
-            src_act = self.device.activity()
             tgt_widgets = self.analyst.static_match_activity(tgt_des)
             for tgt_widget in tgt_widgets:
-                path = self.analyst.calculate_path_between_activity(src_act, tgt_widget.activity, tgt_des, tgt_widget)
+                path = self.analyst.calculate_path_between_activity(src_des, tgt_widget)
                 if path is not None:
-                    events = self.constructor.generate_events(path)
+                    events = self.constructor.generate_events_from_widget(path)
                     self.device.execute(events)
                     break
 

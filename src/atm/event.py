@@ -79,9 +79,7 @@ class Event:
             self.__setattr__(i, kwargs[i])
 
     def __str__(self):
-        return 'Event action={action}, selector={selector} confidence={confidence}'.format(action=self.action,
-                                                                                           selector=self.selector,
-                                                                                           confidence=self.confidence)
+        return f'Event action={self.action}, selector={self.selector} confidence={self.confidence}'
 
     def to_dict(self):
         return {'action': self.action, 'selector': self.selector, 'data': self.text}
@@ -97,11 +95,17 @@ class Event:
         temp = dict(map(lambda x: (translate[x], self.selector[x]), self.selector))
         param = []
         for key in temp:
-            param.append('{}=\'{}\''.format(key, temp[key]))
+            param.append(f'{key}=\'{temp[key]}\'')
         if self.action != 'set_text':
             return 'd({}).{}()'.format(','.join(param), self.action)
         else:
             return 'd({}).{}(\'{}\')'.format(','.join(param), self.action, self.text)
+
+
+class VirtualEvent:
+    def __init__(self, description, data):
+        self.description = description
+        self.data = data
 
 
 if __name__ == '__main__':
