@@ -21,12 +21,11 @@ class Device:
         self.u.app_start(package_name=self.package, wait=True)
         self.history = []
 
-    def get_gui(self):
+    def gui(self):
         return self.u.dump_hierarchy()
 
     def info(self):
         info = self.u.info
-        info['gui'] = self.get_gui()
         return info
 
     # TODO add_edge and add_node need to be add here to prevent scattered and difficult management
@@ -35,21 +34,21 @@ class Device:
             if type(event) == Event:
                 event = [event]
             for e in event:
-                pre_info = self.info()
+                pre_info = self.app_current_with_gui()
                 send_event_to_device[e.action](self, event)
                 self.u.sleep(2)
-                post_info = self.info()
+                post_info = self.app_current_with_gui()
                 self.graph.add_edge(
                     pre_info,
                     post_info,
                     e
                 )
             if self.u.info['currentPackageName'] != self.package:
-                return self.get_gui(), False
+                return self.gui(), False
             self.close_keyboard()
-            return self.get_gui(), True
+            return self.gui(), True
         except BaseError:
-            return self.get_gui(), False
+            return self.gui(), False
 
     def select_widget(self, selector):
         translate = {
@@ -78,11 +77,16 @@ class Device:
         return widget.exists
 
     def close_keyboard(self):
-        if 'main_keyboard_frame' in self.get_gui():
+        if 'main_keyboard_frame' in self.gui():
             self.u.press(key='back')
 
     def app_current(self):
         return self.u.app_current()
+
+    def app_current_with_gui(self):
+        app_current = self.app_current()
+        app_current['gui'] = self.gui()
+        return app_current
 
     def activity(self):
         return self.u.app_current()['activity']
