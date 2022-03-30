@@ -1,5 +1,6 @@
 import atm.event
 from atm.event import build_event, EventData
+from bidict import bidict
 from atm.widget import Widget
 import networkx as nx
 import os
@@ -53,7 +54,7 @@ class FSM:
                 paths_.append(path)
         paths = sorted(paths_, key=lambda x: len(x))
         candidate = []
-        for path in paths[:6]:
+        for path in paths[:5]:
             p = []
             for i in range(len(path) - 1):
                 n1 = path[i]
@@ -71,7 +72,7 @@ class FSM:
             candidate.append(p)
         return candidate
 
-    # TODO
+    # need test
     def add_edge(self, src, tgt, event):
         assert src['activity'], tgt['activity']
         assert src['gui'], tgt['gui']
@@ -80,17 +81,35 @@ class FSM:
         tgt_state, _ = self.get_most_closest_state(tgt)
         for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
             edge = self.g.edges[(src_state.id, tgt_state.id, i)]['edge']
-            if edge.edge_type == Edge.STATIC:
-                widget = edge.event['view']
-                event_type = edge.event_type
-                # TODO
+            # if edge.edge_type == Edge.STATIC:
+            #     widget = edge.event['view']
+            #     event_type = edge.event_type
+            # TODO
             if edge.edge_type == Edge.DYNAMIC:
-                pass
-        pass
+                selector = edge.event.selector
+                action = edge.event_type
+                if action == event.action:
+                    for key in selector:
+                        if selector[key] != event.selector[key]:
+                            continue
+                    return edge
+        dic = {
+            'event': event,
+            'event_type': event.action,
+            'edge_type': Edge.DYNAMIC,
+            'src': src_state.id,
+            'tgt': tgt_state.id,
+            'event_str': src_state.id + tgt_state.id + event.event_str()
+        }
+        new_edge = Edge(dic)
+        self.edges[new_edge.event_str] = new_edge
+        self.g.add_edge(src_state.id, tgt_state.id, edge=new_edge)
+        return new_edge
 
+    # need test
     def add_node(self, app_info):
         _, score = self.get_most_closest_state(app_info)
-        if score >= 0.95:
+        if score >= 0.90:
             return _
         new_state = self.create_state(app_info)
         if new_state.id in self.states:
@@ -251,8 +270,20 @@ class Edge:
     STATIC = 's'
     DYNAMIC = 'd'
     STYPE = ['touch', 'long_touch', 'set_text', 'key', 'swipe', 'scroll', 'intent', 'kill_app']
-    DTYPE = ['click', 'long_click', 'set_text', 'key']
-    D_S_MAP = {'click': 'touch', 'long_click': 'long_touch', 'set_text': 'set_text'}
+    DTYPE = ['click', 'long_click', 'set_text',
+             'home',
+             'back',
+             'left',
+             'right',
+             'up',
+             'down',
+             'center',
+             'menu',
+             'volume_up',
+             'volume_down',
+             'volume_mute',
+             'power']
+    D_S_MAP = bidict({'click': 'touch', 'long_click': 'long_touch', 'set_text': 'set_text'})
 
     def __init__(self, dic):
         self.event = dic['event']
@@ -277,7 +308,7 @@ class Edge:
     def to_event_data(self):
         # TODO
         if self.edge_type == Edge.STATIC:
-            S_D_MAP = dict(zip(Edge.D_S_MAP.values(), Edge.D_S_MAP.keys()))
+            S_D_MAP = Edge.D_S_MAP.inverse
             if self.event_type == 'key':
                 action = self.event['name'].lower()
                 return EventData(action=action, selector=None, data=None)
@@ -296,7 +327,11 @@ class Edge:
                     data = {'text': self.event['text']}
                 return EventData(action=action, selector=view, data=data)
         else:
-            pass
+            if self.event_type == 'set_text':
+                data = {'text': self.event['text']}
+                return EventData(action=self.event_type, selector=self.event.selector, data=data)
+            else:
+                return EventData(action=self.event_type, selector=self.event.selector, data=None)
 
     @staticmethod
     def compare_priority_and_return_higher(e1, e2):
@@ -312,14 +347,14 @@ class Edge:
 if __name__ == '__main__':
     f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/output')
     # print(f.states[s].views)
-    # start = 'dca53e74e20302aaaccdcec2bcf7ae65'
-    # candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')
-    # for state in candidate:
-    #     print(state.id)
-    import uiautomator2 as u2
-
-    d = u2.connect()
-    app_current = d.app_current()
-    app_current['gui'] = d.dump_hierarchy()
-    state, _ = f.get_most_closest_state(app_current)
-    print(state.id)
+    start = 'dca53e74e20302aaaccdcec2bcf7ae65'
+    candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')
+    for state in candidate:
+        print(state.id)
+    # import uiautomator2 as u2
+    #
+    # d = u2.connect()
+    # app_current = d.app_current()
+    # app_current['gui'] = d.dump_hierarchy()
+    # state, _ = f.get_most_closest_state(app_current)
+    # print(state.id)
