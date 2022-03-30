@@ -47,6 +47,7 @@ class DataBase:
         has_seen = {}
         attrs = ['id', 'text', 'contentDescription', 'hint']
         attrs_ui = ['resource-id', 'text', 'content-desc', 'hint']  # the attributes interpreted by UI Automator
+        widget_str_set = set()
         for xml_file in layout_xmls:
             current_layout = xml_file.split('.')[0]
             e = et.parse(os.path.join(layout_folder, xml_file)).getroot()
@@ -81,7 +82,16 @@ class DataBase:
                         for attr in attrs_ui:
                             if attr not in d:
                                 d[attr] = ''
-                        self.widgets.append(Widget(d))
+                        try:
+                            s = d['resource-id'] + d['id']
+                            if s not in widget_str_set:
+                                widget_str_set.add(s)
+                                self.widgets.append(Widget(d))
+                        except TypeError:
+                            self.widgets.append(Widget(d))
+                            pass
+                            # dynamic widget without id
+                            # print(d)
 
     def extract_layout(self):
         name_id_map = dict()
@@ -202,7 +212,7 @@ class DataBase:
         w_name = self.decode(w_name)
         if w_name in self.widget_bidict:
             return self.widget_bidict[w_name]
-        return None
+        return ""
 
     def get_widget_name_from_id(self, w_id):
         if w_id in self.widget_bidict.inverse:
@@ -249,7 +259,10 @@ if __name__ == '__main__':
                   'org.billthefarmer.currency')
     n = 0
     atm = open('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out/atm.gv', 'r').read()
+    # '2131296532'
     for widget in db.widgets:
-        if 'EditText' in widget.get_class():
-            if widget.id in atm:
-                print(widget.resource_id, widget.id)
+        print(widget.resource_id, widget.id)
+    # for widget in db.widgets:
+    #     if 'EditText' in widget.get_class():
+    #         if widget.id in atm:
+    #             print(widget.resource_id, widget.id)
