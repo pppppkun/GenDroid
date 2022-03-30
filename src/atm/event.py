@@ -81,6 +81,9 @@ class Event:
     def __str__(self):
         return f'Event action={self.action}, selector={self.selector} confidence={self.confidence}'
 
+    def event_str(self):
+        return f'ACTION{self.action}SELECTOR{self.selector}DATA{self.text}'
+
     def to_dict(self):
         return {'action': self.action, 'selector': self.selector, 'data': self.text}
 
