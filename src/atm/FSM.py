@@ -1,7 +1,6 @@
-from abc import ABC
-
 import atm.event
 from atm.event import build_event, EventData
+from atm.widget import Widget
 import networkx as nx
 import os
 import json
@@ -34,8 +33,8 @@ class FSM:
             self.edges[edge.event_str] = edge
         pass
 
-    def find_path_to_target_widget(self, device, target_widget):
-        src = self.get_most_closest_state(device.info())
+    def find_path_to_target_widget(self, device, target_widget: Widget):
+        src, _ = self.get_most_closest_state(device.info())
         tgts = self.get_states_contain_widget(target_widget)
         candidate = []
         for tgt in tgts:
@@ -77,14 +76,28 @@ class FSM:
         assert src['activity'], tgt['activity']
         assert src['gui'], tgt['gui']
         assert type(event) == atm.event.Event
+        src_state, _ = self.get_most_closest_state(src)
+        tgt_state, _ = self.get_most_closest_state(tgt)
+        for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
+            edge = self.g.edges[(src_state.id, tgt_state.id, i)]['edge']
+            if edge.edge_type == Edge.STATIC:
+                widget = edge.event['view']
+                event_type = edge.event_type
+                # TODO
+            if edge.edge_type == Edge.DYNAMIC:
+                pass
         pass
 
     def add_node(self, app_info):
+        _, score = self.get_most_closest_state(app_info)
+        if score >= 0.95:
+            return _
         new_state = self.create_state(app_info)
         if new_state.id in self.states:
             return self.states[new_state.id]
         else:
             self.states[new_state.id] = new_state
+            self.g.add_node(new_state.id)
             return new_state
 
     @staticmethod
@@ -101,27 +114,75 @@ class FSM:
         assert app_info['activity']
         assert app_info['gui']
         views = self.hierarchical_to_list(app_info['gui'], app_info['package'])
-        dic = {'activity': app_info['package'] + '/' + app_info['activity'], 'views': views}
+        activity = app_info['activity'][:len(app_info['package'])] + '/' + \
+                   app_info['activity'][len(app_info['package']):]
+        dic = {'activity': activity, 'views': views}
         new_state = State(dic)
         return new_state
 
-    # TODO
+    # Have tested
     def get_most_closest_state(self, app_info):
         views = self.hierarchical_to_list(app_info['gui'], app_info['package'])
-        activity = app_info['package'] + '/' + app_info['activity']
+        activity = app_info['activity'][:len(app_info['package'])] + '/' + \
+                   app_info['activity'][len(app_info['package']):]
+        match = -1
+        candidate_state = None
         for state in self.states.values():
             if state.activity == activity:
-                views_ = state.views
+                # print(state.id)
+                import copy
+                views_ = list(copy.deepcopy(state.views))
                 # for widget in views, for widget_ in views_
-                # only compare resource-id and package is same
-                return state
-            else:
-                continue
-        return None
+                # only compare resource-id
+                count = 0
+                total = 0
+                for widget in views:
+                    if 'Layout' in widget.get('class'):
+                        continue
+                    total += 1
+                    for widget_ in views_:
+                        rid1 = widget.get('resource-id')
+                        rid2 = widget_['resource_id']
+                        text1 = widget.get('text')
+                        text2 = widget_['text']
+                        content1 = widget.get('content-desc')
+                        content2 = widget_['content_description']
+                        if self.equal_or_both_null(rid1, rid2) and self.equal_or_both_null(text1, text2) \
+                                and self.equal_or_both_null(content1, content2):
+                            # print(widget.get('resource-id'), widget.get('text'))
+                            # print(widget_['resource_id'], widget_['text'])
+                            count += 1
+                            views_.remove(widget_)
+                            break
+                if count / total > match:
+                    candidate_state = state
+                    print(count / total, candidate_state.id)
+                    match = count / total
+        assert candidate_state is not None
+        return candidate_state, match
 
-    # TODO
-    def get_states_contain_widget(self, widget):
-        pass
+    @staticmethod
+    def equal_or_both_null(a, b):
+        bool_a = a != '' and a is not None
+        bool_b = b != '' and b is not None
+        if bool_a and bool_b:
+            return a == b
+        if not bool_a and not bool_b:
+            return True
+        return False
+
+    # Have tested
+    def get_states_contain_widget(self, resource_id):
+        candidate_target_states = []
+        for state in self.states.values():
+            for widget_ in state.views:
+                if widget_['resource_id'] is None:
+                    continue
+                else:
+                    if widget_['resource_id'] == resource_id:
+                        candidate_target_states.append(state)
+                        break
+        return candidate_target_states
 
 
 class State:
@@ -250,5 +311,15 @@ class Edge:
 
 if __name__ == '__main__':
     f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/output')
-    s = 'dca53e74e20302aaaccdcec2bcf7ae65'
-    d = '142acb24c5383848f174b116edd5f6bb'
+    # print(f.states[s].views)
+    # start = 'dca53e74e20302aaaccdcec2bcf7ae65'
+    # candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')
+    # for state in candidate:
+    #     print(state.id)
+    import uiautomator2 as u2
+
+    d = u2.connect()
+    app_current = d.app_current()
+    app_current['gui'] = d.dump_hierarchy()
+    state, _ = f.get_most_closest_state(app_current)
+    print(state.id)
