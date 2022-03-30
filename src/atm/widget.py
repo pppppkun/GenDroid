@@ -17,6 +17,9 @@ class Widget:
     def get_class(self):
         return self.class_
 
+    def get_resource_id(self):
+        return self.package + self.resource_id
+
     def to_selector(self):
         return {
             'resource-id': self.resource_id,
