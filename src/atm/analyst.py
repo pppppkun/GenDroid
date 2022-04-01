@@ -4,6 +4,7 @@ from atm.db import DataBase
 from atm.widget import Widget
 from atm.construct import Constructor
 from atm.FSM import FSM
+from atm.event import EventData
 import logging
 import xml.etree.ElementTree as et
 
@@ -43,7 +44,7 @@ class Analyst:
         self.db = data_base
         self.constructor = Constructor(self.db)
 
-    def calculate_path_between_activity(self, description, widget):
+    def calculate_path_between_activity(self, description, widget: Widget):
 
         paths = self.graph.find_path_to_target_widget(self.device, widget)
         candidate = []
@@ -54,9 +55,9 @@ class Analyst:
 
         for path in paths:
             cp = self.device.set_checkpoint()
-            widgets, score = self.valid_path(path, description, widget)
-            if len(widgets) != 0:
-                candidate.append([widgets, score])
+            result, score = self.valid_path(path, description, widget)
+            if result:
+                candidate.append([path, score])
             self.device.reset(cp)
         # TODO
         if len(candidate) >= 1:
@@ -70,34 +71,91 @@ class Analyst:
             return None
 
     # TODO
-    def event_expansion(self, description, last_widget):
+    def event_expansion(self, description, last_selector: dict):
         # 1. find similarity widget between description and last_widget
         # 2. add edge into graph
         # 3. return widget into path
-        pass
+        # only support edittext now.
+        # search brother node.
+        # search
+        gui = self.device.gui()
+        gui = et.fromstring(gui)
+        target_parent = None
+        direct_brother = None
+        candidate_edit_text = []
+        queue = [gui]
+        cluster = []
+        while len(queue) != 0:
+            parent = queue.pop(0)
+            children = list(parent)
+            queue += children
+            for node in children:
+                if 'EditText' in node.get('class'):
+                    candidate_edit_text.append(node)
+        if 'EditText' in last_selector['class']:
+            need_remove = None
+            for edit_text in candidate_edit_text:
+                if edit_text.get('resource-id') == last_selector['resource-id'] and \
+                        edit_text.get('content-desc') == last_selector['content-desc']:
+                    # don't modify same widget at same time
+                    need_remove = edit_text
+                    break
+            if need_remove is not None:
+                candidate_edit_text.remove(need_remove)
+        candidate_edit_text = sorted(
+            map(
+                lambda x: [x, self.confidence.confidence_with_node(x)],
+                candidate_edit_text
+            ),
+            key=lambda x: -x[1]
+        )
+        target_widget = candidate_edit_text[0][0]
+        # find cluster
+        while len(queue) != 0:
+            parent = queue.pop(0)
+            children = list(parent)
+            queue += children
+            for node in children:
+                if node == target_widget:
+                    for brother in children:
+                        if 'EditText' in brother.get('class'):
+                            cluster.append(brother)
+                    break
+            if len(cluster) != 0:
+                break
+        assert len(cluster) != 0
+        scores = list(map(lambda x: self.confidence.confidence_with_node(x), cluster))
+        return cluster, scores
 
-    # TODO
     def valid_path(self, path, description, w_target):
-        widgets = []
+        events = []
         scores = []
         for index, event_data in enumerate(path):
             selector = event_data.selector
-            action = event_data.action
             if self.device.exists_widget(selector):
-                w = Widget(selector)
-                e = self.constructor.generate_events_from_widget(w, action)
-                widgets.append(w)
-                # TODO
-                # scores.append(self.confidence(w, description))
-                self.device.execute(e)
-                self.event_expansion(description, w)
+                event = Constructor.generate_event_from_event_data(event_data)
+                scores.append(self.confidence.confidence_with_selector(selector, description))
+                events.append(event)
+                self.device.execute(event)
+                ns, ss = self.event_expansion(description, self.device.select_widget_wrapper(selector))
+                es = list(
+                    map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
+                                                                            data={'text': 'hello'}),
+                        ns
+                        ),
+                )
+                self.device.execute(es)
+                scores += ss
+                events += es
             else:
-                return False, []
+                return None, None
         if self.device.exists_widget(w_target.to_selector):
-            return
+            return events, scores
+        else:
+            return None, None
 
     def dynamic_match_widget(self, description):
-        gui = self.device.get_gui()
+        gui = self.device.gui()
         root = et.fromstring(gui)
         analyst_log.info('transfer gui and record to model')
 
