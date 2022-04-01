@@ -71,6 +71,7 @@ class Analyst:
             return None
 
     # TODO
+    # fix: should remove same widget in path
     def event_expansion(self, description, last_selector: dict):
         # 1. find similarity widget between description and last_widget
         # 2. add edge into graph
@@ -134,7 +135,7 @@ class Analyst:
             selector = event_data.selector
             if self.device.exists_widget(selector):
                 event = Constructor.generate_event_from_event_data(event_data)
-                scores.append(self.confidence.confidence_with_selector(selector, description))
+                scores.append(self.confidence.confidence_with_selector(self.device.select_widget(selector), description))
                 events.append(event)
                 self.device.execute(event)
                 ns, ss = self.event_expansion(description, self.device.select_widget_wrapper(selector))

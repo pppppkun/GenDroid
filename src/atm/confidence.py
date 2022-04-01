@@ -3,6 +3,7 @@ from collections import namedtuple
 import xml.etree.ElementTree as et
 
 import spacy
+import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from atm.widget import Widget
 from atm.utils import IRRELEVANT_WORDS
@@ -11,7 +12,6 @@ KEY_ATTRIBUTES = {
     'text',
     'content-desc',
     'resource-id',
-    'hint'
 }
 
 PLACE_HOLDER = '@'
@@ -68,16 +68,23 @@ def get_node_attribute_values(node: et.Element):
     return result
 
 
-def get_attribute_based_class(node: et.Element):
-    candidate = None
-    if 'text' in node.get('class').lower():
-        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES]
-    elif 'image' in node.get('class').lower():
-        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES.difference('text')]
-    elif 'button' in node.get('class').lower():
-        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES]
+def get_attribute_based_class(node: dict):
+    clazz = node['class'].lower()
+    text = node['text']
+    content_desc = node['content-desc']
+    if resource_id_pattern.match(node['resource-id']) is None:
+        resource_id = ''
     else:
-        candidate = [node.get(attr) for attr in KEY_ATTRIBUTES]
+        resource_id = resource_id_pattern.match(node['resource-id']).group(1).replace('/', ' ').replace('_',
+                                                                                                        ' ')
+    if 'text' in clazz:
+        candidate = [text, content_desc, resource_id]
+    elif 'image' in clazz:
+        candidate = [content_desc, resource_id]
+    elif 'button' in clazz:
+        candidate = [text, content_desc, resource_id]
+    else:
+        candidate = [text, content_desc, resource_id]
     candidate = list(filter(lambda x: x != '' and x is not None, candidate))
     if len(candidate) == 0:
         candidate.append(PLACE_HOLDER)
@@ -157,8 +164,8 @@ class Confidence:
         self.predict_model = predict_model
         pass
 
-    @classmethod
-    def pos_analysis(cls, description):
+    @staticmethod
+    def pos_analysis(description):
         nlp = spacy.load('en_core_web_sm')
         doc = nlp(description)
         actions = []
@@ -169,56 +176,54 @@ class Confidence:
         for action in actions:
             ui_info = [child for child in action.children]
             if len(ui_info) == 0:
-                ui_infos.append('')
+                # ui_infos.append('')
+                pass
             else:
                 ui_info = ui_info[0]
                 ui_info = ' '.join([child.text for child in ui_info.subtree])
                 ui_infos.append(ui_info)
         if len(ui_infos) == 0:
             ui_infos.append(description)
+        actions = list(map(lambda x: x.text, actions))
         return actions, ui_infos
 
-    # TODO
-    def confidence_with_gui(self, node: et.Element, description):
+    def confidence_with_gui(self, root: et.Element, description):
         pass
 
-    # TODO
-    def confidence_with_widget(self, node: Widget, description):
+    def confidence_with_node(self, node: et.Element, description):
         pass
 
-    # TODO
-    def confidence_with_selector(self, node: dict, description):
-        assert node['class']
-        assert node['resource-id']
-        assert node['content-desc']
-        assert node['text']
-        pass
+    def confidence_with_widget(self, widget: Widget, description):
+        selector = widget.to_selector()
+        selector['class'] = widget.get_class()
+        return self.confidence_with_selector(selector, description)
 
-    # TODO
-    def __confidence(self, node, description):
-        pass
-        # child
-        # childs = list(node)
-        # childs.append(node)
-        # max_score = -1
-        # max_node = None
-        # for candidate in childs:
-        #     self.db.get_widget_id_from_name(candidate.get('resource-id'))
-        #     keys = self.select_attribute(candidate)
-        #     postprocess_keys(keys)
-        #     try:
-        #         sim = self.predict(description, keys)
-        #     except RuntimeError:
-        #         # analyst_log.error(f'cannot be multiplied between: {keys} {description}')
-        #         continue
-        #     score = self.calculate_score(sim)
-        #     if score > max_score:
-        #         max_score = score
-        #         max_node = candidate
-        #     elif score == max_score:
-        #     pass
-        # # analyst_log.warning(f'same score between: {max_node} {candidate}')
-        # return NodeWithConfidence(max_node, max_score)
+    def confidence_with_selector(self, dic: dict, description):
+        assert dic['resource-id']
+        assert dic['content-desc']
+        assert dic['text']
+        assert dic['class']
+        return self.__confidence(dic, description)
+
+    def __confidence(self, node: dict, description):
+        actions, ui_infos = self.pos_analysis(description)
+        keys = self.select_attribute(node)
+        keys = postprocess_keys(keys)
+        result = []
+        for key in keys:
+            if key == PLACE_HOLDER:
+                continue
+            key_actions, key_ui_infos = self.pos_analysis(key)
+            sims = []
+            for key_action in key_actions:
+                for action in actions:
+                    sims.append(self.predict(key_action, action))
+            for key_info in key_ui_infos:
+                for info in ui_infos:
+                    sims.append(self.predict(key_info, info))
+            # select most similar part with description
+            result.append(np.max(sims))
+        return np.average(result)
 
     def select_attribute(self, node):
         return select_function[self.select_strategy](node)
@@ -228,3 +233,7 @@ class Confidence:
 
     def predict(self, description, keys):
         return predict_function[self.predict_model](description, keys)
+
+
+if __name__ == '__main__':
+    pass
