@@ -35,8 +35,8 @@ class FSM:
         pass
 
     def find_path_to_target_widget(self, device, target_widget: Widget):
-        src, _ = self.get_most_closest_state(device.info())
-        tgts = self.get_states_contain_widget(target_widget)
+        src, _ = self.get_most_closest_state(device.app_current_with_gui())
+        tgts = self.get_states_contain_widget(target_widget.resource_id)
         candidate = []
         for tgt in tgts:
             candidate += self.__find_path_between_state(src, tgt)
@@ -81,10 +81,10 @@ class FSM:
         tgt_state, _ = self.get_most_closest_state(tgt)
         for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
             edge = self.g.edges[(src_state.id, tgt_state.id, i)]['edge']
+            # TODO static and dynamic will duplicated.
             # if edge.edge_type == Edge.STATIC:
             #     widget = edge.event['view']
             #     event_type = edge.event_type
-            # TODO
             if edge.edge_type == Edge.DYNAMIC:
                 selector = edge.event.selector
                 action = edge.event_type
@@ -96,9 +96,9 @@ class FSM:
         dic = {
             'event': event,
             'event_type': event.action,
-            'edge_type': Edge.DYNAMIC,
-            'src': src_state.id,
-            'tgt': tgt_state.id,
+            'type': Edge.DYNAMIC,
+            'start_state': src_state.id,
+            'stop_state': tgt_state.id,
             'event_str': src_state.id + tgt_state.id + event.event_str()
         }
         new_edge = Edge(dic)
@@ -175,7 +175,7 @@ class FSM:
                             break
                 if count / total > match:
                     candidate_state = state
-                    print(count / total, candidate_state.id)
+                    # print(count / total, candidate_state.id)
                     match = count / total
         assert candidate_state is not None
         return candidate_state, match
@@ -286,9 +286,12 @@ class Edge:
     D_S_MAP = bidict({'click': 'touch', 'long_click': 'long_touch', 'set_text': 'set_text'})
 
     def __init__(self, dic):
-        self.event = dic['event']
-        self.event_type = self.event['event_type']
         self.edge_type = dic['type']
+        self.event = dic['event']
+        if self.edge_type == Edge.STATIC:
+            self.event_type = self.event['event_type']
+        if self.edge_type == Edge.DYNAMIC:
+            self.event_type = self.event.action
         self.priority = self.get_priority()
         self.src = dic['start_state']
         self.tgt = dic['stop_state']

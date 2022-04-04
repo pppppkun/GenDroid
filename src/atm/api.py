@@ -35,7 +35,7 @@ def set_app(apk_folder, app_name):
 
 class Tester:
     def __init__(self, apk_folder, app_name):
-        set_app(apk_folder, app_name)
+        # set_app(apk_folder, app_name)
         from atm.device import Device
         from atm.executor import Executor
         from atm.db import DataBase
@@ -43,12 +43,13 @@ class Tester:
         from atm.FSM import FSM
         from atm.construct import Constructor
         from atm.confidence import Confidence
-        self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'out'))
+        self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
         self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
                              atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
         self.__confidence = Confidence()
-        self.__analyst = Analyst(device=self.__device, graph=self.__graph, data_base=self.__db)
+        self.__analyst = Analyst(device=self.__device, graph=self.__graph, data_base=self.__db,
+                                 confidence=self.__confidence)
         self.__constructor = Constructor(db=self.__db)
         self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
         self.__descriptions = []

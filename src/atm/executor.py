@@ -20,15 +20,17 @@ class Executor:
         for i in range(len(ves) - 1):
             src_des = ves[i].description
             tgt_des = ves[i + 1].description
-            src_widget = self.analyst.dynamic_match_widget(src_des)[0]
-            src_event = self.constructor.generate_events_from_widget(src_widget, ves[i].data)
+            src_widget = self.analyst.dynamic_match_widget(src_des)
+            src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None, data=ves[i].data)
             self.device.execute(src_event)
             tgt_widgets = self.analyst.static_match_activity(tgt_des)
             for tgt_widget in tgt_widgets:
                 path = self.analyst.calculate_path_between_activity(src_des, tgt_widget)
                 if path is not None:
-                    events = self.constructor.generate_events_from_widget(path)
+                    events = path[0]
                     self.device.execute(events)
+                    # events = self.constructor.generate_events_from_widget(path)
+                    # self.device.execute(events)
                     break
 
     def record(self, events):

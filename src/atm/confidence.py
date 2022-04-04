@@ -1,12 +1,14 @@
 import re
 from collections import namedtuple
 import xml.etree.ElementTree as et
-
 import spacy
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from atm.widget import Widget
 from atm.utils import IRRELEVANT_WORDS
+import enchant
+
+d = enchant.Dict("en_US")
 
 KEY_ATTRIBUTES = {
     'text',
@@ -107,6 +109,8 @@ def postprocess_keys(keys):
         words = key.split('_')
         key = []
         for word in words:
+            # if d.check(word):
+            #     key.append(word)
             if word not in IRRELEVANT_WORDS:
                 key.append(word)
         result.append(' '.join(key))
@@ -188,22 +192,27 @@ class Confidence:
         return actions, ui_infos
 
     def confidence_with_gui(self, root: et.Element, description):
+        # for node in root.iter():
         pass
 
     def confidence_with_node(self, node: et.Element, description):
-        pass
+        dic = node.attrib
+        confidence = self.confidence_with_selector(dic, description).confidence
+        return NodeWithConfidence(node=node, confidence=confidence)
 
     def confidence_with_widget(self, widget: Widget, description):
         selector = widget.to_selector()
         selector['class'] = widget.get_class()
-        return self.confidence_with_selector(selector, description)
+        confidence = self.confidence_with_selector(selector, description).confidence
+        return NodeWithConfidence(node=widget, confidence=confidence)
 
     def confidence_with_selector(self, dic: dict, description):
-        assert dic['resource-id']
-        assert dic['content-desc']
-        assert dic['text']
-        assert dic['class']
-        return self.__confidence(dic, description)
+        assert 'resource-id' in dic
+        assert 'content-desc' in dic
+        assert 'text' in dic
+        assert 'class' in dic
+        confidence = self.__confidence(dic, description)
+        return NodeWithConfidence(node=dic, confidence=confidence)
 
     def __confidence(self, node: dict, description):
         actions, ui_infos = self.pos_analysis(description)
@@ -219,11 +228,22 @@ class Confidence:
                 for action in actions:
                     sims.append(self.predict(key_action, action))
             for key_info in key_ui_infos:
+                if key_info == '':
+                    continue
                 for info in ui_infos:
+                    if info == '':
+                        continue
                     sims.append(self.predict(key_info, info))
             # select most similar part with description
             result.append(np.max(sims))
-        return np.average(result)
+        if len(result) == 0:
+            score = 0
+        else:
+            score = np.average(result)
+        return score
+        # score = np.average(result)
+        # return np.average(result)
+        # return NodeWithConfidence(node=node, confidence=np.average(result))
 
     def select_attribute(self, node):
         return select_function[self.select_strategy](node)
@@ -236,4 +256,6 @@ class Confidence:
 
 
 if __name__ == '__main__':
-    pass
+    import enchant
+    d = enchant.Dict("en_US")
+    d.check('hello')

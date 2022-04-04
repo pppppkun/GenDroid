@@ -44,7 +44,7 @@ class Analyst:
         self.db = data_base
         self.constructor = Constructor(self.db)
 
-    def calculate_path_between_activity(self, description, widget: Widget):
+    def calculate_path_between_activity(self, description, widget):
 
         paths = self.graph.find_path_to_target_widget(self.device, widget)
         candidate = []
@@ -53,11 +53,11 @@ class Analyst:
             import numpy as np
             return np.average(score) / (1 + np.log2(len(path)))
 
+        cp = self.device.set_checkpoint()
         for path in paths:
-            cp = self.device.set_checkpoint()
-            result, score = self.valid_path(path, description, widget)
-            if result:
-                candidate.append([path, score])
+            events, scores = self.valid_path(path, description, widget)
+            if events:
+                candidate.append([events, scores])
             self.device.reset(cp)
         # TODO
         if len(candidate) >= 1:
@@ -135,7 +135,8 @@ class Analyst:
             selector = event_data.selector
             if self.device.exists_widget(selector):
                 event = Constructor.generate_event_from_event_data(event_data)
-                scores.append(self.confidence.confidence_with_selector(self.device.select_widget(selector), description))
+                scores.append(
+                    self.confidence.confidence_with_selector(self.device.select_widget(selector), description))
                 events.append(event)
                 self.device.execute(event)
                 ns, ss = self.event_expansion(description, self.device.select_widget_wrapper(selector))
@@ -150,12 +151,17 @@ class Analyst:
                 events += es
             else:
                 return None, None
-        if self.device.exists_widget(w_target.to_selector):
+        if self.device.exists_widget(w_target.to_selector()):
             return events, scores
         else:
             return None, None
 
     def dynamic_match_widget(self, description):
+        """
+        return GUI element with the highest confidence
+        :param description:
+        :return:
+        """
         gui = self.device.gui()
         root = et.fromstring(gui)
         analyst_log.info('transfer gui and record to model')
@@ -166,7 +172,7 @@ class Analyst:
             lambda _node: filter_by_class(_node)
         ).append(
             map,
-            lambda x: self.confidence(x, description)
+            lambda x: self.confidence.confidence_with_node(x, description)
         ).append(
             sorted,
             lambda x: -x.confidence
@@ -177,6 +183,11 @@ class Analyst:
         return widget
 
     def static_match_activity(self, description):
+        """
+        return [widget_0, widget_1, ... ]
+        :param description:
+        :return:
+        """
         f = FunctionWrap(self.db.widgets)
         f.append(
             map,
@@ -184,6 +195,9 @@ class Analyst:
         ).append(
             sorted,
             lambda x: -x.confidence
+        ).append(
+            map,
+            lambda x: x.node
         )
         candidate = f.do()
         return candidate

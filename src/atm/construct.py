@@ -1,6 +1,6 @@
 from atm.widget import Widget
 from atm.db import DataBase
-from atm.event import build_event
+from atm.event import build_event, event_factory
 import logging
 
 construct_log = logging.getLogger('construct')
@@ -26,23 +26,29 @@ class Constructor:
         self.db = db
         pass
 
-    def generate_events_from_widget(self, widgets, action=None, data=None):
-        work_list = []
-        if type(widgets) == Widget:
-            work_list.append(widgets)
-        events = []
-        for widget in work_list:
-            clazz = widget.get_class()
-            candidate_action = None
-            if action:
-                candidate_action = action
+    def generate_events_from_widget(self, widget, action=None, data=None):
+        clazz = widget.get_class()
+        clazz = clazz[clazz.rindex('.') + 1:]
+        candidate_action = None
+        if action:
+            candidate_action = action
+        else:
+            a = self.db.get_action_from_history(widget.to_selector())
+            if a is not None:
+                candidate_action = a
             else:
-                a = self.db.get_action_from_history(widget.to_selector())
-                if a is not None:
-                    candidate_action = a
-                else:
-                    if clazz in widget_attempt_action_map:
-                        candidate_action = widget_attempt_action_map[clazz][0]
-            event = build_event(candidate_action, widget.to_selector(), data)
-            events.append(event)
-        return events
+                if clazz in widget_attempt_action_map:
+                    candidate_action = widget_attempt_action_map[clazz][0]
+        event = build_event(candidate_action, widget.to_selector(), data)
+        return event
+
+    def generate_event_from_node(self, node, action=None, data=None):
+        widget = Widget(node.attrib)
+        return self.generate_events_from_widget(widget, action, data)
+
+    @staticmethod
+    def generate_event_from_event_data(event_data):
+        event = event_factory[event_data.action](event_data)
+        return event
+
+

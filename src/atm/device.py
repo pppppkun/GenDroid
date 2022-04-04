@@ -19,6 +19,7 @@ class Device:
             self.u.app_uninstall(self.package)
         self.install_grant_runtime_permissions(apk_path)
         self.u.app_start(package_name=self.package, wait=True)
+        self.u.sleep(2)
         self.history = []
 
     def gui(self):
@@ -35,7 +36,7 @@ class Device:
                 event = [event]
             for e in event:
                 pre_info = self.app_current_with_gui()
-                send_event_to_device[e.action](self, event)
+                send_event_to_device[e.action](self, e)
                 self.u.sleep(2)
                 post_info = self.app_current_with_gui()
                 self.graph.add_edge(
@@ -58,6 +59,10 @@ class Device:
             'resource-id': 'resourceId',
             'class': 'className'
         }
+        new_selector = {}
+        for x in translate:
+            if x in selector:
+                new_selector[translate[x]] = selector[x]
         temp = dict(map(lambda x: (translate[x], selector[x]), selector))
         return self.u(**temp)
 
