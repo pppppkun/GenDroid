@@ -77,7 +77,7 @@ def get_all_nodes(xml):
 
 
 FEATURE_KEYS = ['class', 'resource-id', 'text', 'content-desc', 'clickable', 'password', 'naf']
-IRRELEVANT_WORDS = ['bt', 'et', 'tv', 'fab', 'rv', 'cb', 'ac', 'btn']
+IRRELEVANT_WORDS = ['bt', 'et', 'tv', 'fab', 'rv', 'cb', 'ac', 'btn', '&gt;']
 
 
 def get_activity(node):

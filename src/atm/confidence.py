@@ -74,7 +74,7 @@ def get_attribute_based_class(node: dict):
     clazz = node['class'].lower()
     text = node['text']
     content_desc = node['content-desc']
-    if resource_id_pattern.match(node['resource-id']) is None:
+    if node['resource-id'] is None or resource_id_pattern.match(node['resource-id']) is None:
         resource_id = ''
     else:
         resource_id = resource_id_pattern.match(node['resource-id']).group(1).replace('/', ' ').replace('_',
@@ -106,6 +106,10 @@ def postprocess_keys(keys):
     result = []
     for key in keys:
         key = str(key)
+        key = key.translate({
+            ord(' '): '_',
+            ord('-'): '_'
+        })
         words = key.split('_')
         key = []
         for word in words:
@@ -257,5 +261,41 @@ class Confidence:
 
 if __name__ == '__main__':
     import enchant
-    d = enchant.Dict("en_US")
-    d.check('hello')
+
+    # d = enchant.Dict("en_US")
+    # d.check('hello')
+    p1 = 'fab_new_task'
+    p2 = 'ADD NEW TASK &gt;'
+    p1 = postprocess_keys([p1])[0]
+    p2 = postprocess_keys([p2])[0]
+    d = 'create new task'
+    # for key in keys:
+    a, u = Confidence.pos_analysis(p1)
+    print(a, u)
+    r = predict_use_sbert(d, a+u)
+    print(np.average(r))
+    a, u = Confidence.pos_analysis(p2)
+    print(a, u)
+    r = predict_use_sbert(d, a+u)
+    print(np.average(r))
+    #     if key == PLACE_HOLDER:
+    #         continue
+    #     key_actions, key_ui_infos = confidence.pos_analysis(key)
+    #     sims = []
+    #     for key_action in key_actions:
+    #         for action in actions:
+    #             sims.append(self.predict(key_action, action))
+    #     for key_info in key_ui_infos:
+    #         if key_info == '':
+    #             continue
+    #         for info in ui_infos:
+    #             if info == '':
+    #                 continue
+    #             sims.append(self.predict(key_info, info))
+    #     # select most similar part with description
+    #     result.append(np.max(sims))
+    # if len(result) == 0:
+    #     score = 0
+    # else:
+    #     score = np.average(result)
+    # return score

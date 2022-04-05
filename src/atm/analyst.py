@@ -4,6 +4,7 @@ from atm.db import DataBase
 from atm.widget import Widget
 from atm.construct import Constructor
 from atm.FSM import FSM
+from atm.event import KEY_EVENTS
 from atm.event import EventData
 import logging
 import xml.etree.ElementTree as et
@@ -46,15 +47,19 @@ class Analyst:
 
     def calculate_path_between_activity(self, description, widget):
 
-        paths = self.graph.find_path_to_target_widget(self.device, widget)
+        paths = self.graph.find_path_to_target_widget(self.device, widget)[:2]
         candidate = []
 
         def calculate_weight(path, score):
             import numpy as np
             return np.average(score) / (1 + np.log2(len(path)))
 
+        analyst_log.info('begin to valid path')
         cp = self.device.set_checkpoint()
+        i = 0
         for path in paths:
+            analyst_log.info(f'valid {i}-th path')
+            i += 1
             events, scores = self.valid_path(path, description, widget)
             if events:
                 candidate.append([events, scores])
@@ -105,13 +110,16 @@ class Analyst:
                 candidate_edit_text.remove(need_remove)
         candidate_edit_text = sorted(
             map(
-                lambda x: [x, self.confidence.confidence_with_node(x)],
+                lambda x: [x, self.confidence.confidence_with_node(x, description)],
                 candidate_edit_text
             ),
-            key=lambda x: -x[1]
+            key=lambda x: -x[1].confidence
         )
+        if len(candidate_edit_text) == 0:
+            return [], []
         target_widget = candidate_edit_text[0][0]
         # find cluster
+        queue = [gui]
         while len(queue) != 0:
             parent = queue.pop(0)
             children = list(parent)
@@ -125,7 +133,7 @@ class Analyst:
             if len(cluster) != 0:
                 break
         assert len(cluster) != 0
-        scores = list(map(lambda x: self.confidence.confidence_with_node(x), cluster))
+        scores = list(map(lambda x: self.confidence.confidence_with_node(x, description).confidence, cluster))
         return cluster, scores
 
     def valid_path(self, path, description, w_target):
@@ -133,13 +141,24 @@ class Analyst:
         scores = []
         for index, event_data in enumerate(path):
             selector = event_data.selector
+            action = event_data.action
+            if action in KEY_EVENTS:
+                analyst_log.info(f'check {len(events)}-th event with action={action}')
+                event = Constructor.generate_event_from_event_data(event_data)
+                self.device.execute(event, is_add_edge=False)
+                # scores.append(
+                #     self.confidence.confidence_with_selector(last_widget, description))
+                events.append(event)
+                continue
             if self.device.exists_widget(selector):
                 event = Constructor.generate_event_from_event_data(event_data)
+                last_widget = self.device.select_widget_wrapper(selector)
+                analyst_log.info(f'check {len(events)}-th event with action={action} rid={last_widget["resource-id"]}')
                 scores.append(
-                    self.confidence.confidence_with_selector(self.device.select_widget(selector), description))
+                    self.confidence.confidence_with_selector(last_widget, description).confidence)
                 events.append(event)
-                self.device.execute(event)
-                ns, ss = self.event_expansion(description, self.device.select_widget_wrapper(selector))
+                self.device.execute(event, is_add_edge=False)
+                ns, ss = self.event_expansion(description, last_widget)
                 es = list(
                     map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
                                                                             data={'text': 'hello'}),
@@ -151,7 +170,9 @@ class Analyst:
                 events += es
             else:
                 return None, None
-        if self.device.exists_widget(w_target.to_selector()):
+        t = self.device.exists_widget(w_target.to_selector())
+        # print(type(t), t)
+        if t:
             return events, scores
         else:
             return None, None
@@ -189,6 +210,7 @@ class Analyst:
         :return:
         """
         f = FunctionWrap(self.db.widgets)
+        analyst_log.info('calculate similarity between description and static widget')
         f.append(
             map,
             lambda x: self.confidence.confidence_with_widget(x, description)
@@ -198,8 +220,10 @@ class Analyst:
         ).append(
             map,
             lambda x: x.node
+            # lambda x : x
         )
         candidate = f.do()
+        # r_end = 5 if len(candidate) > 5 else len(candidate)
         return candidate
 
     def help(self):

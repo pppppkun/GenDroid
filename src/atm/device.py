@@ -30,20 +30,22 @@ class Device:
         return info
 
     # TODO add_edge and add_node need to be add here to prevent scattered and difficult management
-    def execute(self, event):
+    def execute(self, event, is_add_edge=True):
         try:
             if type(event) == Event:
                 event = [event]
             for e in event:
                 pre_info = self.app_current_with_gui()
                 send_event_to_device[e.action](self, e)
+                self.history.append(e)
                 self.u.sleep(2)
                 post_info = self.app_current_with_gui()
-                self.graph.add_edge(
-                    pre_info,
-                    post_info,
-                    e
-                )
+                if is_add_edge:
+                    self.graph.add_edge(
+                        pre_info,
+                        post_info,
+                        e
+                    )
             if self.u.info['currentPackageName'] != self.package:
                 return self.gui(), False
             self.close_keyboard()
@@ -61,10 +63,10 @@ class Device:
         }
         new_selector = {}
         for x in translate:
-            if x in selector:
+            if x in selector and selector[x]:
                 new_selector[translate[x]] = selector[x]
-        temp = dict(map(lambda x: (translate[x], selector[x]), selector))
-        return self.u(**temp)
+        # temp = dict(map(lambda x: (translate[x], selector[x]), selector))
+        return self.u(**new_selector)
 
     def select_widget_wrapper(self, selector):
         widget = self.select_widget(selector).info
@@ -79,7 +81,7 @@ class Device:
 
     def exists_widget(self, selector):
         widget = self.select_widget(selector)
-        return widget.exists
+        return widget.exists()
 
     def close_keyboard(self):
         if 'main_keyboard_frame' in self.gui():

@@ -6,7 +6,15 @@ import networkx as nx
 import os
 import json
 import re
+import logging
 
+fsm_log = logging.getLogger('FSM')
+fsm_log.setLevel(logging.DEBUG)
+fsm_log_ch = logging.StreamHandler()
+fsm_log_ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fsm_log_ch.setFormatter(formatter)
+fsm_log.addHandler(fsm_log_ch)
 
 class FSM:
     def __init__(self, graph_folder):
@@ -37,13 +45,14 @@ class FSM:
     def find_path_to_target_widget(self, device, target_widget: Widget):
         src, _ = self.get_most_closest_state(device.app_current_with_gui())
         tgts = self.get_states_contain_widget(target_widget.resource_id)
+        fsm_log.info(f'begin to find path between {src.id} {target_widget.resource_id}')
         candidate = []
         for tgt in tgts:
             candidate += self.__find_path_between_state(src, tgt)
         return candidate
 
     def __find_path_between_state(self, src, tgt):
-        paths = nx.all_simple_paths(self.g, src, tgt)
+        paths = nx.all_simple_paths(self.g, src.id, tgt.id)
         paths = list(paths)
         str_of_paths = set()
         paths_ = []
@@ -73,12 +82,14 @@ class FSM:
         return candidate
 
     # need test
+    # need fix about meet a new state
     def add_edge(self, src, tgt, event):
         assert src['activity'], tgt['activity']
         assert src['gui'], tgt['gui']
         assert type(event) == atm.event.Event
         src_state, _ = self.get_most_closest_state(src)
         tgt_state, _ = self.get_most_closest_state(tgt)
+        fsm_log.info(f'add edge between {src_state.id} {tgt_state.id} {event.event_str()}')
         for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
             edge = self.g.edges[(src_state.id, tgt_state.id, i)]['edge']
             # TODO static and dynamic will duplicated.
@@ -89,9 +100,14 @@ class FSM:
                 selector = edge.event.selector
                 action = edge.event_type
                 if action == event.action:
-                    for key in selector:
-                        if selector[key] != event.selector[key]:
-                            continue
+                    try:
+                        for key in selector:
+                            if selector[key] != event.selector[key]:
+                                continue
+                    except TypeError or KeyError:
+                        print(event)
+                        print(edge.event)
+                        return None
                     return edge
         dic = {
             'event': event,
@@ -142,8 +158,11 @@ class FSM:
     # Have tested
     def get_most_closest_state(self, app_info):
         views = self.hierarchical_to_list(app_info['gui'], app_info['package'])
-        activity = app_info['activity'][:len(app_info['package'])] + '/' + \
+        if app_info['package'] in app_info['activity']:
+            activity = app_info['activity'][:len(app_info['package'])] + '/' + \
                    app_info['activity'][len(app_info['package']):]
+        else:
+            activity = app_info['package'] + '/' + app_info['activity']
         match = -1
         candidate_state = None
         for state in self.states.values():
@@ -191,6 +210,7 @@ class FSM:
         return False
 
     # Have tested
+    # resource_id don't have package information
     def get_states_contain_widget(self, resource_id):
         candidate_target_states = []
         for state in self.states.values():
@@ -198,7 +218,9 @@ class FSM:
                 if widget_['resource_id'] is None:
                     continue
                 else:
-                    if widget_['resource_id'] == resource_id:
+                    widget_rid = str(widget_['resource_id'])
+                    widget_rid = widget_rid[widget_rid.rindex('/') + 1:]
+                    if widget_rid == resource_id:
                         candidate_target_states.append(state)
                         break
         return candidate_target_states
@@ -316,7 +338,7 @@ class Edge:
                 action = self.event['name'].lower()
                 return EventData(action=action, selector=None, data=None)
             else:
-                if self.event_str in S_D_MAP:
+                if self.event_type in S_D_MAP:
                     action = S_D_MAP[self.event_type]
                 else:
                     action = self.event_type
@@ -349,11 +371,15 @@ class Edge:
 
 if __name__ == '__main__':
     f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/output')
+    for edge in f.edges:
+        e = f.edges[edge]
+        if e.event_type == 'key':
+            print(e.event['name'])
     # print(f.states[s].views)
-    start = 'dca53e74e20302aaaccdcec2bcf7ae65'
-    candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')
-    for state in candidate:
-        print(state.id)
+    # start = 'dca53e74e20302aaaccdcec2bcf7ae65'
+    # candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')
+    # for state in candidate:
+    #     print(state.id)
     # import uiautomator2 as u2
     #
     # d = u2.connect()

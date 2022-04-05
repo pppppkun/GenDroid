@@ -21,8 +21,15 @@ class Widget:
         return self.package + self.resource_id
 
     def to_selector(self):
+        if self.package not in self.resource_id:
+            resource_id = self.package + ':id/' + self.resource_id
+        else:
+            resource_id = self.resource_id
         return {
-            'resource-id': self.resource_id,
+            'resource-id': resource_id,
             'content-desc': self.content_desc,
             'text': self.text
         }
+
+    def __str__(self):
+        return self.resource_id + ' ' + self.content_desc + ' ' + self.text

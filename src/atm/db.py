@@ -262,12 +262,7 @@ if __name__ == '__main__':
     atm = open('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out/atm.gv', 'r').read()
     # '2131296532'
     for widget in db.widgets:
-        rid = widget.resource_id.split('_')
-        b = []
-        for word in rid:
-            if word not in IRRELEVANT_WORDS:
-                b.append(word)
-        print(' '.join(b), widget.id)
+        print(widget.resource_id)
     # for widget in db.widgets:
     #     if 'EditText' in widget.get_class():
     #         if widget.id in atm:

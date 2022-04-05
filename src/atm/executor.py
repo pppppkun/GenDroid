@@ -28,7 +28,7 @@ class Executor:
                 path = self.analyst.calculate_path_between_activity(src_des, tgt_widget)
                 if path is not None:
                     events = path[0]
-                    self.device.execute(events)
+                    self.device.execute(events, is_add_edge=False)
                     # events = self.constructor.generate_events_from_widget(path)
                     # self.device.execute(events)
                     break
