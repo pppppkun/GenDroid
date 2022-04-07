@@ -12,7 +12,7 @@ payRepair交接.md
 **/**/*.h5
 src/**/**/*.json
 src/**/*.ep*
-src/**/output
+src/**/output*
 doc
 benchmark
 output_model
