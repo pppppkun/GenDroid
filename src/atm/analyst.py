@@ -21,7 +21,8 @@ non_action_view = {
     'Layout',
     'Group',
     'Recycle',
-    'Scroll'
+    'Scroll',
+    'SeekBar'
 }
 
 
@@ -64,7 +65,7 @@ class Analyst:
             if events:
                 candidate.append([events, scores])
             self.device.reset(cp)
-        # TODO
+
         if len(candidate) >= 1:
             for path in candidate:
                 p, s = path[0], path[1]
@@ -77,7 +78,7 @@ class Analyst:
 
     # TODO
     # fix: should remove same widget in path
-    def event_expansion(self, description, last_selector: dict):
+    def event_expansion(self, description, last_selector=None):
         # 1. find similarity widget between description and last_widget
         # 2. add edge into graph
         # 3. return widget into path
@@ -98,7 +99,7 @@ class Analyst:
             for node in children:
                 if 'EditText' in node.get('class'):
                     candidate_edit_text.append(node)
-        if 'EditText' in last_selector['class']:
+        if None and 'EditText' in last_selector['class']:
             need_remove = None
             for edit_text in candidate_edit_text:
                 if edit_text.get('resource-id') == last_selector['resource-id'] and \
@@ -128,11 +129,15 @@ class Analyst:
                 if node == target_widget:
                     for brother in children:
                         if 'EditText' in brother.get('class'):
+                            analyst_log.info(f'event expansion with {brother.get("resource-id")}')
                             cluster.append(brother)
                     break
             if len(cluster) != 0:
                 break
         assert len(cluster) != 0
+        last_event = self.device.history[-1]
+        if last_event.selector:
+            cluster = list(filter(lambda x: x.get('resource-id') != last_event.selector['resource-id'], cluster))
         scores = list(map(lambda x: self.confidence.confidence_with_node(x, description).confidence, cluster))
         return cluster, scores
 
@@ -140,6 +145,16 @@ class Analyst:
         events = []
         scores = []
         for index, event_data in enumerate(path):
+            ns, ss = self.event_expansion(description, path)
+            es = list(
+                map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
+                                                                        data={'text': 'hello'}),
+                    ns
+                    ),
+            )
+            self.device.execute(es)
+            scores += ss
+            events += es
             selector = event_data.selector
             action = event_data.action
             if action in KEY_EVENTS:
@@ -158,16 +173,7 @@ class Analyst:
                     self.confidence.confidence_with_selector(last_widget, description).confidence)
                 events.append(event)
                 self.device.execute(event, is_add_edge=False)
-                ns, ss = self.event_expansion(description, last_widget)
-                es = list(
-                    map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
-                                                                            data={'text': 'hello'}),
-                        ns
-                        ),
-                )
-                self.device.execute(es)
-                scores += ss
-                events += es
+
             else:
                 return None, None
         t = self.device.exists_widget(w_target.to_selector())
@@ -185,8 +191,7 @@ class Analyst:
         """
         gui = self.device.gui()
         root = et.fromstring(gui)
-        analyst_log.info('transfer gui and record to model')
-
+        analyst_log.info('calculate similarity between description and GUI')
         f = FunctionWrap((_node for _node in root.iter()))
         f.append(
             filter,

@@ -88,6 +88,8 @@ class Event:
         return {'action': self.action, 'selector': self.selector, 'data': self.text}
 
     def to_uiautomator2_format(self):
+        if not self.selector:
+            return f'd.keyevent(\'{self.action}\')'
         translate = {
             'text': 'text',
             'content-desc': 'descriptionContains',
@@ -95,7 +97,11 @@ class Event:
             'resource-id': 'resourceId',
             'class': 'className'
         }
-        temp = dict(map(lambda x: (translate[x], self.selector[x]), self.selector))
+        temp = {}
+        for x in translate:
+            if x in self.selector and self.selector[x]:
+                temp[translate[x]] = self.selector[x]
+        # temp = dict(map(lambda x: (translate[x], self.selector[x]), self.selector))
         param = []
         for key in temp:
             param.append(f'{key}=\'{temp[key]}\'')

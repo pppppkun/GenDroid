@@ -80,6 +80,12 @@ FEATURE_KEYS = ['class', 'resource-id', 'text', 'content-desc', 'clickable', 'pa
 IRRELEVANT_WORDS = ['bt', 'et', 'tv', 'fab', 'rv', 'cb', 'ac', 'btn', '&gt;']
 
 
+def search_key_and_return_value(dic: dict, keys):
+    for key in keys:
+        if key in dic:
+            return dic[key]
+
+
 def get_activity(node):
     assert node.split(':')[0]
     return node.split(':')[0].split('$')[0]

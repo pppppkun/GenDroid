@@ -65,4 +65,5 @@ class Tester:
         return self
 
     def print_script(self):
+        self.__executor.to_scripts()
         return self

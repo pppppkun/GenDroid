@@ -16,6 +16,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 fsm_log_ch.setFormatter(formatter)
 fsm_log.addHandler(fsm_log_ch)
 
+
 class FSM:
     def __init__(self, graph_folder):
         self.graph_folder = graph_folder
@@ -31,6 +32,7 @@ class FSM:
         states = [os.path.join(states, f) for f in os.listdir(states) if f.endswith('.json')]
         for state in states:
             state = json.load(open(state, 'r'))
+            state['type'] = State.STATIC
             state = State(state)
             self.g.add_node(state.id)
             self.states[state.id] = state
@@ -88,7 +90,9 @@ class FSM:
         assert src['gui'], tgt['gui']
         assert type(event) == atm.event.Event
         src_state, _ = self.get_most_closest_state(src)
-        tgt_state, _ = self.get_most_closest_state(tgt)
+        tgt_state, score = self.get_most_closest_state(tgt)
+        if score < 0.9:
+            tgt_state = self.add_node(tgt)
         fsm_log.info(f'add edge between {src_state.id} {tgt_state.id} {event.event_str()}')
         for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
             edge = self.g.edges[(src_state.id, tgt_state.id, i)]['edge']
@@ -142,7 +146,7 @@ class FSM:
         root = et.fromstring(gui)
         for view in root.iter():
             if view.get('package') == package:
-                views.append(view)
+                views.append(view.attrib)
         return views
 
     def create_state(self, app_info):
@@ -151,7 +155,7 @@ class FSM:
         views = self.hierarchical_to_list(app_info['gui'], app_info['package'])
         activity = app_info['activity'][:len(app_info['package'])] + '/' + \
                    app_info['activity'][len(app_info['package']):]
-        dic = {'activity': activity, 'views': views}
+        dic = {'foreground_activity': activity, 'views': views, 'type': State.DYNAMIC}
         new_state = State(dic)
         return new_state
 
@@ -160,7 +164,7 @@ class FSM:
         views = self.hierarchical_to_list(app_info['gui'], app_info['package'])
         if app_info['package'] in app_info['activity']:
             activity = app_info['activity'][:len(app_info['package'])] + '/' + \
-                   app_info['activity'][len(app_info['package']):]
+                       app_info['activity'][len(app_info['package']):]
         else:
             activity = app_info['package'] + '/' + app_info['activity']
         match = -1
@@ -180,11 +184,15 @@ class FSM:
                     total += 1
                     for widget_ in views_:
                         rid1 = widget.get('resource-id')
-                        rid2 = widget_['resource_id']
                         text1 = widget.get('text')
                         text2 = widget_['text']
                         content1 = widget.get('content-desc')
-                        content2 = widget_['content_description']
+                        if state.type == state.STATIC:
+                            rid2 = widget_['resource_id']
+                            content2 = widget_['content_description']
+                        else:
+                            rid2 = widget_['resource-id']
+                            content2 = widget_['content-desc']
                         if self.equal_or_both_null(rid1, rid2) and self.equal_or_both_null(text1, text2) \
                                 and self.equal_or_both_null(content1, content2):
                             # print(widget.get('resource-id'), widget.get('text'))
@@ -215,11 +223,22 @@ class FSM:
         candidate_target_states = []
         for state in self.states.values():
             for widget_ in state.views:
-                if widget_['resource_id'] is None:
+                if state.type == State.STATIC:
+                    rid_key = 'resource_id'
+                else:
+                    rid_key = 'resource-id'
+                if widget_[rid_key] is None or len(widget_[rid_key]) == 0:
                     continue
                 else:
-                    widget_rid = str(widget_['resource_id'])
-                    widget_rid = widget_rid[widget_rid.rindex('/') + 1:]
+                    widget_rid = str(widget_[rid_key])
+                    try:
+                        widget_rid = widget_rid[widget_rid.rindex('/') + 1:]
+                    except ValueError:
+                        print(widget_rid)
+                        print(state.id)
+                        print(state.type)
+                        for v in state.views:
+                            print(v)
                     if widget_rid == resource_id:
                         candidate_target_states.append(state)
                         break
@@ -227,7 +246,11 @@ class FSM:
 
 
 class State:
+    STATIC = 's'
+    DYNAMIC = 'd'
+
     def __init__(self, dic):
+        self.type = dic['type']
         self.activity = dic['foreground_activity']
         self.views = dic['views']
         # self.id = dic['state_str']
@@ -235,7 +258,6 @@ class State:
             self.id = dic['state_str']
         else:
             self.id = self.__get_state_str()
-        pass
 
     def __eq__(self, other):
         return self.id == other.id
@@ -271,7 +293,7 @@ class State:
             view_text = "None"
         signature = "[class]%s[resource_id]%s[text]%s[%s,%s,%s]" % \
                     (State.__safe_dict_get(view_dict, 'class', "None"),
-                     State.__safe_dict_get(view_dict, 'resource_id', "None"),
+                     State.__safe_dict_get(view_dict, 'resource-id', "None"),
                      view_text,
                      State.__key_if_true(view_dict, 'enabled'),
                      State.__key_if_true(view_dict, 'checked'),
@@ -343,6 +365,7 @@ class Edge:
                 else:
                     action = self.event_type
                 import copy
+                assert 'view' in self.event
                 view = copy.deepcopy(self.event['view'])
                 view['resource-id'] = view['resource_id']
                 view['content-desc'] = view['content_description']
@@ -371,10 +394,9 @@ class Edge:
 
 if __name__ == '__main__':
     f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/output')
-    for edge in f.edges:
-        e = f.edges[edge]
-        if e.event_type == 'key':
-            print(e.event['name'])
+    # for edge in f.edges:
+    #     e = f.edges[edge]
+    #     print(e.event)
     # print(f.states[s].views)
     # start = 'dca53e74e20302aaaccdcec2bcf7ae65'
     # candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')

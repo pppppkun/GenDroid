@@ -39,6 +39,7 @@ class Device:
                 send_event_to_device[e.action](self, e)
                 self.history.append(e)
                 self.u.sleep(2)
+                self.close_keyboard()
                 post_info = self.app_current_with_gui()
                 if is_add_edge:
                     self.graph.add_edge(
@@ -48,7 +49,6 @@ class Device:
                     )
             if self.u.info['currentPackageName'] != self.package:
                 return self.gui(), False
-            self.close_keyboard()
             return self.gui(), True
         except BaseError:
             return self.gui(), False
@@ -84,7 +84,7 @@ class Device:
         return widget.exists()
 
     def close_keyboard(self):
-        if 'main_keyboard_frame' in self.gui():
+        if 'com.google.android.inputmethod.latin' in self.gui():
             self.u.press(key='back')
 
     def app_current(self):

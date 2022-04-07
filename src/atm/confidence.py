@@ -121,26 +121,6 @@ def postprocess_keys(keys):
     return result
 
 
-non_action_view = {
-    'Layout',
-    'Group',
-    'Recycle',
-    'Scroll'
-}
-
-
-def filter_by_class(node: et.Element):
-    class_ = node.get('class')
-    if class_ is None:
-        return False
-    result = True
-    for view in non_action_view:
-        if view in class_:
-            result = False
-            break
-    return result
-
-
 SELECT_MOST_DIRECT = 'most_direct'
 SELECT_ALL = 'all'
 SELECT_BASED_CLASS = 'class'
@@ -272,11 +252,11 @@ if __name__ == '__main__':
     # for key in keys:
     a, u = Confidence.pos_analysis(p1)
     print(a, u)
-    r = predict_use_sbert(d, a+u)
+    r = predict_use_sbert(d, a + u)
     print(np.average(r))
     a, u = Confidence.pos_analysis(p2)
     print(a, u)
-    r = predict_use_sbert(d, a+u)
+    r = predict_use_sbert(d, a + u)
     print(np.average(r))
     #     if key == PLACE_HOLDER:
     #         continue
