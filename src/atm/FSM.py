@@ -31,13 +31,20 @@ class FSM:
         events = [os.path.join(events, f) for f in os.listdir(events) if f.endswith('.json')]
         states = [os.path.join(states, f) for f in os.listdir(states) if f.endswith('.json')]
         for state in states:
-            state = json.load(open(state, 'r'))
+            try:
+                state = json.load(open(state, 'r'))
+            except json.decoder.JSONDecodeError:
+                continue
             state['type'] = State.STATIC
             state = State(state)
             self.g.add_node(state.id)
             self.states[state.id] = state
         for event in events:
-            event = json.load(open(event, 'r'))
+            try:
+                event = json.load(open(event, 'r'))
+            except json.decoder.JSONDecodeError:
+                continue
+                # print(event)
             event['type'] = Edge.STATIC
             edge = Edge(event)
             self.g.add_edge(edge.src, edge.tgt, edge=edge)
@@ -376,7 +383,7 @@ class Edge:
                 return EventData(action=action, selector=view, data=data)
         else:
             if self.event_type == 'set_text':
-                data = {'text': self.event['text']}
+                data = {'text': self.event.text}
                 return EventData(action=self.event_type, selector=self.event.selector, data=data)
             else:
                 return EventData(action=self.event_type, selector=self.event.selector, data=None)

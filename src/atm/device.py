@@ -79,13 +79,28 @@ class Device:
         n_w['activity'] = self.activity()
         return n_w
 
-    def exists_widget(self, selector):
+    def exists_widget(self, selector: dict):
         widget = self.select_widget(selector)
-        return widget.exists()
+        if widget.exists():
+            return True
+        # up or lower of text
+        else:
+            if 'text' in selector:
+                selector['text'] = selector['text'].upper()
+            widget = self.select_widget(selector)
+            if widget.exists():
+                return True
+            if 'text' in selector:
+                selector.pop('text')
+            widget = self.select_widget(selector)
+            if widget.exists():
+                return True
+            return False
 
     def close_keyboard(self):
         if 'com.google.android.inputmethod.latin' in self.gui():
             self.u.press(key='back')
+        self.u.sleep(2)
 
     def app_current(self):
         return self.u.app_current()
@@ -108,6 +123,7 @@ class Device:
             for event in events:
                 send_event_to_device[event.action](self, event)
                 self.u.sleep(2)
+                self.close_keyboard()
 
     def install_grant_runtime_permissions(self, data):
         target = "/data/local/tmp/_tmp.apk"

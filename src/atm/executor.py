@@ -35,24 +35,27 @@ class Executor:
             src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None, data=ves[i].data)
             self.device.execute(src_event)
             tgt_widgets = self.analyst.static_match_activity(tgt_des)
+            found_path = False
             for tgt_widget in tgt_widgets:
                 path = self.analyst.calculate_path_between_activity(src_des, tgt_widget)
                 if path is not None:
+                    found_path = True
                     executor_log.info(f'execute path')
                     events = path[0]
                     self.device.execute(events, is_add_edge=False)
                     # events = self.constructor.generate_events_from_widget(path)
                     # self.device.execute(events)
                     break
-            # no path have found
-            ns, ss = self.analyst.event_expansion(tgt_des)
-            es = list(
-                map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
-                                                                        data={'text': 'hello'}),
-                    ns
-                    ),
-            )
-            self.device.execute(es)
+            if not found_path:
+                # no path have found
+                ns, ss = self.analyst.event_expansion(tgt_des)
+                es = list(
+                    map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
+                                                                            data={'text': 'hello'}),
+                        ns
+                        ),
+                )
+                self.device.execute(es)
 
         src_des = ves[len(ves) - 1].description
         executor_log.info(f'generating event for "{src_des}"')
@@ -80,5 +83,7 @@ d.sleep(3)
 if 'com.google.android.inputmethod.latin' in d.dump_hierarchy():
    d.press(key='back')
 """
+        from yapf.yapflib.yapf_api import FormatCode
+        scripts, _ = FormatCode(scripts)
         f = open('test_script.py', 'w')
         f.write(scripts)

@@ -48,13 +48,16 @@ class Analyst:
 
     def calculate_path_between_activity(self, description, widget):
 
-        paths = self.graph.find_path_to_target_widget(self.device, widget)[:2]
+        paths = self.graph.find_path_to_target_widget(self.device, widget)
         candidate = []
 
         def calculate_weight(path, score):
             import numpy as np
             return np.average(score) / (1 + np.log2(len(path)))
 
+        analyst_log.info(f'find {len(paths)} paths')
+        if len(paths) == 0:
+            return None
         analyst_log.info('begin to valid path')
         cp = self.device.set_checkpoint()
         i = 0
@@ -65,6 +68,8 @@ class Analyst:
             if events:
                 candidate.append([events, scores])
             self.device.reset(cp)
+            if len(candidate) == 5:
+                break
 
         if len(candidate) >= 1:
             for path in candidate:
@@ -78,7 +83,7 @@ class Analyst:
 
     # TODO
     # fix: should remove same widget in path
-    def event_expansion(self, description, last_selector=None):
+    def event_expansion(self, description, will_or_have_execute_event_selector=None):
         # 1. find similarity widget between description and last_widget
         # 2. add edge into graph
         # 3. return widget into path
@@ -99,16 +104,10 @@ class Analyst:
             for node in children:
                 if 'EditText' in node.get('class'):
                     candidate_edit_text.append(node)
-        if None and 'EditText' in last_selector['class']:
-            need_remove = None
-            for edit_text in candidate_edit_text:
-                if edit_text.get('resource-id') == last_selector['resource-id'] and \
-                        edit_text.get('content-desc') == last_selector['content-desc']:
-                    # don't modify same widget at same time
-                    need_remove = edit_text
-                    break
-            if need_remove is not None:
-                candidate_edit_text.remove(need_remove)
+
+        if len(candidate_edit_text) == 0:
+            return [], []
+
         candidate_edit_text = sorted(
             map(
                 lambda x: [x, self.confidence.confidence_with_node(x, description)],
@@ -116,8 +115,7 @@ class Analyst:
             ),
             key=lambda x: -x[1].confidence
         )
-        if len(candidate_edit_text) == 0:
-            return [], []
+
         target_widget = candidate_edit_text[0][0]
         # find cluster
         queue = [gui]
@@ -129,12 +127,28 @@ class Analyst:
                 if node == target_widget:
                     for brother in children:
                         if 'EditText' in brother.get('class'):
-                            analyst_log.info(f'event expansion with {brother.get("resource-id")}')
                             cluster.append(brother)
                     break
             if len(cluster) != 0:
                 break
         assert len(cluster) != 0
+
+        _ = []
+        if will_or_have_execute_event_selector:
+            for node in cluster:
+                for selector in will_or_have_execute_event_selector:
+                    if node.get('resource-id') == selector['resource-id']:
+                        _.append(node)
+            for node in _:
+                if node in cluster:
+                    cluster.remove(node)
+
+        if len(cluster) == 0:
+            return [], []
+
+        for node in cluster:
+            analyst_log.info(f'event expansion with {node.get("resource-id")}')
+
         last_event = self.device.history[-1]
         if last_event.selector:
             cluster = list(filter(lambda x: x.get('resource-id') != last_event.selector['resource-id'], cluster))
@@ -144,8 +158,9 @@ class Analyst:
     def valid_path(self, path, description, w_target):
         events = []
         scores = []
+        will_or_have_execute_event_selector = [event_data.selector for event_data in path if event_data.selector]
         for index, event_data in enumerate(path):
-            ns, ss = self.event_expansion(description, path)
+            ns, ss = self.event_expansion(description, will_or_have_execute_event_selector)
             es = list(
                 map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
                                                                         data={'text': 'hello'}),
@@ -155,6 +170,7 @@ class Analyst:
             self.device.execute(es)
             scores += ss
             events += es
+            will_or_have_execute_event_selector += [e.selector for e in es]
             selector = event_data.selector
             action = event_data.action
             if action in KEY_EVENTS:
@@ -175,12 +191,15 @@ class Analyst:
                 self.device.execute(event, is_add_edge=False)
 
             else:
+                analyst_log.info(f'can\'t find widget {selector["resource-id"]} in valid')
                 return None, None
         t = self.device.exists_widget(w_target.to_selector())
         # print(type(t), t)
         if t:
+            analyst_log.info('successfully valid path')
             return events, scores
         else:
+            analyst_log.info(f'can\'t find widget {w_target.to_selector()} in valid')
             return None, None
 
     def dynamic_match_widget(self, description):
@@ -215,7 +234,7 @@ class Analyst:
         :return:
         """
         f = FunctionWrap(self.db.widgets)
-        analyst_log.info('calculate similarity between description and static widget')
+        analyst_log.info(f'calculate similarity between "{description}" and static widget')
         f.append(
             map,
             lambda x: self.confidence.confidence_with_widget(x, description)
