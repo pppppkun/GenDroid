@@ -27,7 +27,7 @@ class DataBase:
         self.extract_widget()
         self.extract_layout()
         self.extract_strings()
-        self.cid2activity = self.extract_activity()
+        # self.cid2activity = self.extract_activity()
         self.extract_widgets_from_layout()
 
     def extract_widgets_from_layout(self):
@@ -65,6 +65,7 @@ class DataBase:
                             d[key] += ',' + self.decode(value)
                         else:
                             d[key] = self.decode(value)
+                        d['package'] = self.package
                     if d:
                         d['class'] = w_type
                         if 'FloatingActionButton' in d['class']:
@@ -77,9 +78,9 @@ class DataBase:
                         mother_layout = current_layout
                         while mother_layout in parent_layout:
                             mother_layout = parent_layout[mother_layout]
-                        d['layout_name'] = mother_layout
-                        d['layout_oId'] = self.get_layout_id_from_name(mother_layout)
-                        d['package'], d['activity'], d['method'] = self.match_act_info_for_oId(d['id'], d['layout_oId'])
+                        # d['layout_name'] = mother_layout
+                        # d['layout_oId'] = self.get_layout_id_from_name(mother_layout)
+                        # d['package'], d['activity'], d['method'] = self.match_act_info_for_oId(d['id'], d['layout_oId'])
                         for attr in attrs_ui:
                             if attr not in d:
                                 d[attr] = ''
@@ -262,7 +263,8 @@ if __name__ == '__main__':
     atm = open('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out/atm.gv', 'r').read()
     # '2131296532'
     for widget in db.widgets:
-        print(widget.resource_id)
+        if widget.resource_id == 'bt_new_task_ok':
+            print(widget.text)
     # for widget in db.widgets:
     #     if 'EditText' in widget.get_class():
     #         if widget.id in atm:
