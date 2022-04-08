@@ -28,8 +28,10 @@ def set_app(apk_folder, app_name):
     os.system(f'mkdir {out}')
     api_log.info(f'decompiler {apk} to {decompile}')
     os.system(f'apktool d {apk} -f -o {decompile} > /dev/null')
-    api_log.info(f'Analysis ATM using TrimDroid to {out}')
-    os.system(f'java -jar {td_path} {apk_folder} {app_name} {out} > /dev/null')
+    # api_log.info(f'Analysis ATM using TrimDroid to {out}')
+    # os.system(f'java -jar {td_path} {apk_folder} {app_name} {out} > /dev/null')
+    api_log.info(f'Dynamic Analysis App using Droidbot (BFS)')
+    os.system(f'adb root & adb logcat -c & droidbot -a {apk} -o output -is_emulator -count 300')
     pass
 
 
@@ -67,3 +69,6 @@ class Tester:
     def print_script(self):
         self.__executor.to_scripts()
         return self
+
+if __name__ == '__main__':
+    pass
