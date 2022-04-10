@@ -1,3 +1,5 @@
+import time
+
 from atm.device import Device
 from atm.utils import FunctionWrap
 from atm.db import DataBase
@@ -155,51 +157,67 @@ class Analyst:
         scores = list(map(lambda x: self.confidence.confidence_with_node(x, description).confidence, cluster))
         return cluster, scores
 
-    def valid_path(self, path, description, w_target):
-        events = []
-        scores = []
-        will_or_have_execute_event_selector = [event_data.selector for event_data in path if event_data.selector]
-        for index, event_data in enumerate(path):
-            ns, ss = self.event_expansion(description, will_or_have_execute_event_selector)
-            es = list(
-                map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
-                                                                        data={'text': 'hello'}),
-                    ns
-                    ),
-            )
-            self.device.execute(es)
-            scores += ss
-            events += es
-            will_or_have_execute_event_selector += [e.selector for e in es]
-            selector = event_data.selector
-            action = event_data.action
-            if action in KEY_EVENTS:
-                analyst_log.info(f'check {len(events)}-th event with action={action}')
-                event = Constructor.generate_event_from_event_data(event_data)
-                self.device.execute(event, is_add_edge=False)
-                # scores.append(
-                #     self.confidence.confidence_with_selector(last_widget, description))
-                events.append(event)
-                continue
-            if self.device.exists_widget(selector):
-                event = Constructor.generate_event_from_event_data(event_data)
-                last_widget = self.device.select_widget_wrapper(selector)
-                analyst_log.info(f'check {len(events)}-th event with action={action} rid={last_widget["resource-id"]}')
-                scores.append(
-                    self.confidence.confidence_with_selector(last_widget, description).confidence)
-                events.append(event)
-                self.device.execute(event, is_add_edge=False)
+    def valid_path(self, path, description, w_target: dict):
+        try:
+            events = []
+            scores = []
+            will_or_have_execute_event_selector = [event_data.selector for event_data in path if event_data.selector]
+            for index, event_data in enumerate(path):
+                ns, ss = self.event_expansion(description, will_or_have_execute_event_selector)
+                es = list(
+                    map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
+                                                                            data={'text': 'hello'}),
+                        ns
+                        ),
+                )
+                self.device.execute(es)
+                scores += ss
+                events += es
+                will_or_have_execute_event_selector += [e.selector for e in es]
+                selector = event_data.selector
+                action = event_data.action
+                if action in KEY_EVENTS:
+                    analyst_log.info(f'check {len(events)}-th event with action={action}')
+                    event = Constructor.generate_event_from_event_data(event_data)
+                    self.device.execute(event, is_add_edge=False)
+                    # scores.append(
+                    #     self.confidence.confidence_with_selector(last_widget, description))
+                    events.append(event)
+                    continue
+                if self.device.exists_widget(selector):
+                    event = Constructor.generate_event_from_event_data(event_data)
+                    last_widget = self.device.select_widget_wrapper(selector)
+                    analyst_log.info(
+                        f'check {len(events)}-th event with action={action} rid={last_widget["resource-id"]}')
+                    scores.append(
+                        self.confidence.confidence_with_selector(last_widget, description).confidence)
+                    events.append(event)
+                    self.device.execute(event, is_add_edge=False)
 
+                else:
+                    analyst_log.info(f'can\'t find widget {selector["resource-id"]} in valid')
+                    return None, None
+            t = self.device.exists_widget(w_target)
+            if t:
+                analyst_log.info('successfully valid path')
+                return events, scores
             else:
-                analyst_log.info(f'can\'t find widget {selector["resource-id"]} in valid')
+                analyst_log.info(f'can\'t find widget {w_target} in valid')
                 return None, None
-        t = self.device.exists_widget(w_target.to_selector())
-        # print(type(t), t)
-        if t:
-            analyst_log.info('successfully valid path')
-            return events, scores
-        else:
-            analyst_log.info(f'can\'t find widget {w_target.to_selector()} in valid')
+        except:
+            analyst_log.info('meet unhandled error when valid path')
+            import inspect
+            stacks = inspect.stack()
+            log = open('error_log' + str(int(time.time())) + '.txt', 'w')
+            s = ''
+            for stack in stacks:
+                f = stack.frame
+                s += f.f_lineno + "\n"
+                r = {k: v for k, v in f.f_locals.items()}
+                for v in r.values():
+                    if hasattr(v, '__dict__'):
+                        s += v.__dict__() + '\n'
+                print(s, file=log)
             return None, None
 
     def dynamic_match_widget(self, description):
@@ -233,22 +251,36 @@ class Analyst:
         :param description:
         :return:
         """
-        f = FunctionWrap(self.db.widgets)
+        # f = FunctionWrap(self.graph.widgets())
+        widgets = self.graph.widgets()
         analyst_log.info(f'calculate similarity between "{description}" and static widget')
-        f.append(
-            map,
-            lambda x: self.confidence.confidence_with_widget(x, description)
-        ).append(
-            sorted,
-            lambda x: -x.confidence
-        ).append(
-            map,
-            lambda x: x.node
-            # lambda x : x
-        )
-        candidate = f.do()
+        widgets = list(filter(lambda x: x['resource-id'] and 'Layout' not in x['class'], widgets))
+        count = len(widgets)
+        node_with_confidences = []
+        for index, widget in enumerate(widgets):
+            n_w_c = self.confidence.confidence_with_selector(widget, description)
+            node_with_confidences.append(n_w_c)
+
+            if index % 20 == 0:
+                analyst_log.info(f'have calculate {(index / count) * 100}% static widget...')
+        node_with_confidences = sorted(node_with_confidences, key=lambda x: -x.confidence)
+        node_with_confidences = map(lambda x: x.node, node_with_confidences)
+        # f.append(
+        #     filter,
+        #     lambda x: x['resource-id'] and 'Layout' not in x['class']
+        # ).append(
+        #     map,
+        #     lambda x: self.confidence.confidence_with_selector(x, description)
+        # ).append(
+        #     sorted,
+        #     lambda x: -x.confidence
+        # ).append(
+        #     map,
+        #     lambda x: x.node
+        # )
+        # candidate = f.do()
         # r_end = 5 if len(candidate) > 5 else len(candidate)
-        return candidate
+        return node_with_confidences
 
     def help(self):
         pass
