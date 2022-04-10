@@ -1,12 +1,13 @@
 import xml.etree.ElementTree as et
 import uiautomator2 as u2
 from uiautomator2.exceptions import BaseError
-from atm.event import Event, send_event_to_device
+from atm.event import Event, send_event_to_device, build_event
 from androguard.core.bytecodes.apk import APK
+from atm.FSM import FSM
 
 
 class Device:
-    def __init__(self, apk_path, graph, serial=None):
+    def __init__(self, apk_path, graph: FSM, serial=None):
         if serial:
             self.u = u2.connect(serial)
         else:
@@ -38,8 +39,7 @@ class Device:
                 pre_info = self.app_current_with_gui()
                 send_event_to_device[e.action](self, e)
                 self.history.append(e)
-                self.u.sleep(2)
-                self.close_keyboard()
+                self.interval()
                 post_info = self.app_current_with_gui()
                 if is_add_edge:
                     self.graph.add_edge(
@@ -47,6 +47,20 @@ class Device:
                         post_info,
                         e
                     )
+                    # if not self.graph.have_path_between_device_info(post_info, pre_info) and e.action != 'set_text':
+                    #     back_event = build_event(action='back', selector=None, data=None)
+                    #     send_event_to_device[back_event.action](self, back_event)
+                    #     self.interval()
+                    #     back_info = self.app_current_with_gui()
+                    #     self.graph.add_edge(
+                    #         post_info,
+                    #         back_info,
+                    #         back_event
+                    #     )
+                    #     send_event_to_device[e.action](self, e)
+                    #     self.interval()
+
+
             if self.u.info['currentPackageName'] != self.package:
                 return self.gui(), False
             return self.gui(), True
@@ -85,22 +99,35 @@ class Device:
             return True
         # up or lower of text
         else:
-            if 'text' in selector:
+            if 'text' in selector and selector['text']:
                 selector['text'] = selector['text'].upper()
-            widget = self.select_widget(selector)
-            if widget.exists():
-                return True
-            if 'text' in selector:
-                selector.pop('text')
-            widget = self.select_widget(selector)
-            if widget.exists():
-                return True
-            return False
+                widget = self.select_widget(selector)
+                return widget.exists()
+            else:
+                return False
+            # if 'text' in selector:
+            #     if selector['text']:
+            #         selector['text'] = selector['text'].upper()
+            #     else:
+            #
+            #     widget = self.select_widget(selector)
+            #     if widget.exists():
+            #         return True
+            #     if 'text' in selector:
+            #         selector.pop('text')
+            #     widget = self.select_widget(selector)
+            #     if widget.exists():
+            #         return True
+            # return False
 
     def close_keyboard(self):
         if 'com.google.android.inputmethod.latin' in self.gui():
             self.u.press(key='back')
         self.u.sleep(2)
+
+    def interval(self):
+        self.u.sleep(2)
+        self.close_keyboard()
 
     def app_current(self):
         return self.u.app_current()
