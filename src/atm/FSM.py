@@ -51,10 +51,14 @@ class FSM:
             self.edges[edge.event_str] = edge
         pass
 
-    def find_path_to_target_widget(self, device, target_widget: Widget):
-        src, _ = self.get_most_closest_state(device.app_current_with_gui())
-        tgts = self.get_states_contain_widget(target_widget.resource_id)
-        fsm_log.info(f'begin to find path between {src.id} {target_widget.resource_id}')
+    def find_path_to_target_widget(self, device, target_widget: dict):
+        try:
+            src, _ = self.get_most_closest_state(device.app_current_with_gui())
+            tgts = self.get_states_contain_widget(target_widget['resource-id'])
+        except:
+            fsm_log.error('error to find state.')
+            return []
+        fsm_log.info(f'begin to find path between {src.id} {target_widget["resource-id"]}')
         candidate = []
         for tgt in tgts:
             candidate += self.__find_path_between_state(src, tgt)
@@ -135,9 +139,9 @@ class FSM:
 
     # need test
     def add_node(self, app_info):
-        _, score = self.get_most_closest_state(app_info)
-        if score >= 0.90:
-            return _
+        # _, score = self.get_most_closest_state(app_info)
+        # if score >= 0.90:
+        #     return _
         new_state = self.create_state(app_info)
         if new_state.id in self.states:
             return self.states[new_state.id]
@@ -211,7 +215,9 @@ class FSM:
                     candidate_state = state
                     # print(count / total, candidate_state.id)
                     match = count / total
-        assert candidate_state is not None
+        # assert candidate_state is not None
+        if candidate_state is None:
+            return None, 0
         return candidate_state, match
 
     @staticmethod
@@ -238,18 +244,48 @@ class FSM:
                     continue
                 else:
                     widget_rid = str(widget_[rid_key])
-                    try:
-                        widget_rid = widget_rid[widget_rid.rindex('/') + 1:]
-                    except ValueError:
-                        print(widget_rid)
-                        print(state.id)
-                        print(state.type)
-                        for v in state.views:
-                            print(v)
                     if widget_rid == resource_id:
                         candidate_target_states.append(state)
                         break
         return candidate_target_states
+
+    def have_path_between_device_info(self, pre_info, post_info):
+        src, _ = self.get_most_closest_state(pre_info)
+        tgt, _ = self.get_most_closest_state(post_info)
+        return self.have_path_between_state(src, tgt)
+
+    def have_path_between_state(self, src, tgt):
+        paths = nx.all_simple_paths(self.g, src, tgt)
+        return len(paths) != 0
+
+
+    def widgets(self):
+        keys = set()
+        widgets = []
+        dynamic_keys = [
+            'resource-id', 'content-desc', 'text', 'class'
+        ]
+        static_keys = [
+            'resource_id', 'content_description', 'text', 'class'
+        ]
+        final_keys = dynamic_keys
+        for state in self.states.values():
+            for widget in state.views:
+                selector = {}
+                selector_key = ''
+                key_set = None
+                if state.type == State.DYNAMIC:
+                    key_set = dynamic_keys
+                if state.type == State.STATIC:
+                    key_set = static_keys
+                for index, key in enumerate(key_set):
+                    selector[final_keys[index]] = widget[key]
+                    selector_key += widget[key] if widget[key] else 'None'
+                if selector_key not in keys:
+                    widgets.append(selector)
+                    keys.add(selector_key)
+
+        return widgets
 
 
 class State:
@@ -401,6 +437,35 @@ class Edge:
 
 if __name__ == '__main__':
     f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/output')
+    widgets = f.widgets()
+    for widget in widgets:
+        print(widget)
+    print(len(widgets))
+
+    non_action_view = {
+        'Layout',
+        'Group',
+        'Recycle',
+        'Scroll',
+        'SeekBar'
+    }
+
+
+    def filter_by_class(node):
+        class_ = node['class']
+        if class_ is None:
+            return False
+        result = True
+        for view in non_action_view:
+            if view in class_:
+                result = False
+                break
+        return result
+
+
+    widgets = list(filter(filter_by_class, widgets))
+    print(len(widgets))
+
     # for edge in f.edges:
     #     e = f.edges[edge]
     #     print(e.event)
