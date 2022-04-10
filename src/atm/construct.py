@@ -39,6 +39,8 @@ class Constructor:
             else:
                 if clazz in widget_attempt_action_map:
                     candidate_action = widget_attempt_action_map[clazz][0]
+                else:
+                    candidate_action = 'click'
         event = build_event(candidate_action, widget.to_selector(), data)
         return event
 
