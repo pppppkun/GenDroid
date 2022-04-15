@@ -61,7 +61,10 @@ class FSM:
         fsm_log.info(f'begin to find path between {src.id} {target_widget["resource-id"]}')
         candidate = []
         for tgt in tgts:
-            candidate += self.__find_path_between_state(src, tgt)
+            if tgt.id == src.id:
+                candidate += []
+            else:
+                candidate += self.__find_path_between_state(src, tgt)
         return candidate
 
     def __find_path_between_state(self, src, tgt):
@@ -90,8 +93,14 @@ class FSM:
                     else:
                         candidate_edge = edge
                 assert candidate_edge is not None
+                if candidate_edge.priority > 3:
+                    p = None
+                    break
                 p.append(candidate_edge.to_event_data())
-            candidate.append(p)
+            if p is None:
+                continue
+            else:
+                candidate.append(p)
         return candidate
 
     # need test
@@ -206,16 +215,12 @@ class FSM:
                             content2 = widget_['content-desc']
                         if self.equal_or_both_null(rid1, rid2) and self.equal_or_both_null(text1, text2) \
                                 and self.equal_or_both_null(content1, content2):
-                            # print(widget.get('resource-id'), widget.get('text'))
-                            # print(widget_['resource_id'], widget_['text'])
                             count += 1
                             views_.remove(widget_)
                             break
                 if count / total > match:
                     candidate_state = state
-                    # print(count / total, candidate_state.id)
                     match = count / total
-        # assert candidate_state is not None
         if candidate_state is None:
             return None, 0
         return candidate_state, match
@@ -258,7 +263,6 @@ class FSM:
         paths = nx.all_simple_paths(self.g, src, tgt)
         return len(paths) != 0
 
-
     def widgets(self):
         keys = set()
         widgets = []
@@ -284,7 +288,6 @@ class FSM:
                 if selector_key not in keys:
                     widgets.append(selector)
                     keys.add(selector_key)
-
         return widgets
 
 
@@ -387,6 +390,8 @@ class Edge:
     def get_priority(self):
         if self.edge_type == Edge.STATIC:
             return Edge.STYPE.index(self.event_type)
+        if self.edge_type == Edge.DYNAMIC:
+            return Edge.DTYPE.index(self.event_type)
 
     def __eq__(self, other):
         if type(other) == Edge:
@@ -396,7 +401,6 @@ class Edge:
             return False
 
     def to_event_data(self):
-        # TODO
         if self.edge_type == Edge.STATIC:
             S_D_MAP = Edge.D_S_MAP.inverse
             if self.event_type == 'key':
@@ -408,7 +412,9 @@ class Edge:
                 else:
                     action = self.event_type
                 import copy
-                assert 'view' in self.event
+                # assert 'view' in self.event
+                if 'view' not in self.event:
+                    return None
                 view = copy.deepcopy(self.event['view'])
                 view['resource-id'] = view['resource_id']
                 view['content-desc'] = view['content_description']
@@ -436,35 +442,37 @@ class Edge:
 
 
 if __name__ == '__main__':
-    f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/output')
-    widgets = f.widgets()
-    for widget in widgets:
-        print(widget)
-    print(len(widgets))
-
-    non_action_view = {
-        'Layout',
-        'Group',
-        'Recycle',
-        'Scroll',
-        'SeekBar'
-    }
-
-
-    def filter_by_class(node):
-        class_ = node['class']
-        if class_ is None:
-            return False
-        result = True
-        for view in non_action_view:
-            if view in class_:
-                result = False
-                break
-        return result
-
-
-    widgets = list(filter(filter_by_class, widgets))
-    print(len(widgets))
+    f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/simpleCalendarPro/output')
+    s = f.states['e096469d7a4f8eb91242a68f6b47eeb1']
+    print(s)
+    # widgets = f.widgets()
+    # for widget in widgets:
+    #     print(widget)
+    # print(len(widgets))
+    #
+    # non_action_view = {
+    #     'Layout',
+    #     'Group',
+    #     'Recycle',
+    #     'Scroll',
+    #     'SeekBar'
+    # }
+    #
+    #
+    # def filter_by_class(node):
+    #     class_ = node['class']
+    #     if class_ is None:
+    #         return False
+    #     result = True
+    #     for view in non_action_view:
+    #         if view in class_:
+    #             result = False
+    #             break
+    #     return result
+    #
+    #
+    # widgets = list(filter(filter_by_class, widgets))
+    # print(len(widgets))
 
     # for edge in f.edges:
     #     e = f.edges[edge]

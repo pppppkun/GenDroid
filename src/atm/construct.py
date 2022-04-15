@@ -41,16 +41,20 @@ class Constructor:
                     candidate_action = widget_attempt_action_map[clazz][0]
                 else:
                     candidate_action = 'click'
+        if data is not None:
+            candidate_action = 'set_text'
+        if candidate_action == 'set_text' and data is None:
+            data = {'text': 'hello'}
         event = build_event(candidate_action, widget.to_selector(), data)
         return event
 
     def generate_event_from_node(self, node, action=None, data=None):
         widget = Widget(node.attrib)
+        if 'AmountEditText' in widget.get_resource_id():
+            data['text'] = '100'
         return self.generate_events_from_widget(widget, action, data)
 
     @staticmethod
     def generate_event_from_event_data(event_data):
         event = event_factory[event_data.action](event_data)
         return event
-
-

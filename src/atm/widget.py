@@ -4,6 +4,7 @@ class Widget:
         self.content_desc = d['content-desc']
         self.resource_id = d['resource-id']
         self.text = d['text']
+        self.hint = d['hint'] if 'hint' in d else ''
         self.activity = d['hint'] if 'hint' in d else None
         self.activity = d['activity'] if 'activity' in d else None
         self.package = d['package']
@@ -18,13 +19,17 @@ class Widget:
         return self.class_
 
     def get_resource_id(self):
-        return self.package + self.resource_id
+        if self.resource_id == '':
+            return ''
+        if 'android:id/' in self.resource_id:
+            return self.resource_id
+        if self.package not in self.resource_id:
+            return self.package + ':id/' + self.resource_id
+        else:
+            return self.resource_id
 
     def to_selector(self):
-        if self.package not in self.resource_id:
-            resource_id = self.package + ':id/' + self.resource_id
-        else:
-            resource_id = self.resource_id
+        resource_id = self.get_resource_id()
         return {
             'resource-id': resource_id,
             'content-desc': self.content_desc,

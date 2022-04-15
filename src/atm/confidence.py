@@ -113,8 +113,6 @@ def postprocess_keys(keys):
         words = key.split('_')
         key = []
         for word in words:
-            # if d.check(word):
-            #     key.append(word)
             if word not in IRRELEVANT_WORDS:
                 key.append(word)
         result.append(' '.join(key))
@@ -240,24 +238,10 @@ class Confidence:
 
 
 if __name__ == '__main__':
-    import enchant
 
-    # d = enchant.Dict("en_US")
-    # d.check('hello')
-    p1 = 'fab_new_task'
-    p2 = 'ADD NEW TASK &gt;'
-    p1 = postprocess_keys([p1])[0]
-    p2 = postprocess_keys([p2])[0]
-    d = 'create new task'
-    # for key in keys:
-    a, u = Confidence.pos_analysis(p1)
-    print(a, u)
-    r = predict_use_sbert(d, a + u)
-    print(np.average(r))
-    a, u = Confidence.pos_analysis(p2)
-    print(a, u)
-    r = predict_use_sbert(d, a + u)
-    print(np.average(r))
+    d = 'Please make sure the reminders work properly before relying on them. Check your device battery and notification settings, if there is nothing blocking the reminders, or killing the app in the background.'
+    s = 'confirm'
+    print(predict_use_sbert(d, s))
     #     if key == PLACE_HOLDER:
     #         continue
     #     key_actions, key_ui_infos = confidence.pos_analysis(key)

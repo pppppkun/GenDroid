@@ -7,7 +7,6 @@ from atm.widget import Widget
 from atm.construct import Constructor
 from atm.FSM import FSM
 from atm.event import KEY_EVENTS
-from atm.event import EventData
 import logging
 import xml.etree.ElementTree as et
 
@@ -55,6 +54,8 @@ class Analyst:
 
         def calculate_weight(path, score):
             import numpy as np
+            if len(score) == 0:
+                return 0
             return np.average(score) / (1 + np.log2(len(path)))
 
         analyst_log.info(f'find {len(paths)} paths')
@@ -64,6 +65,8 @@ class Analyst:
         cp = self.device.set_checkpoint()
         i = 0
         for path in paths:
+            if i == 15:
+                break
             analyst_log.info(f'valid {i}-th path')
             i += 1
             events, scores = self.valid_path(path, description, widget)
@@ -129,11 +132,15 @@ class Analyst:
                 if node == target_widget:
                     for brother in children:
                         if 'EditText' in brother.get('class'):
-                            cluster.append(brother)
+                            db_widget = self.db.get_origin_widget_text(brother.get('resource-id'))
+                            if db_widget:
+                                if db_widget.hint.upper() == brother.get('text').upper():
+                                    cluster.append(brother)
+                            else:
+                                cluster.append(brother)
                     break
             if len(cluster) != 0:
                 break
-        assert len(cluster) != 0
 
         _ = []
         if will_or_have_execute_event_selector:
@@ -163,7 +170,7 @@ class Analyst:
             scores = []
             will_or_have_execute_event_selector = [event_data.selector for event_data in path if event_data.selector]
             for index, event_data in enumerate(path):
-                ns, ss = self.event_expansion(description, will_or_have_execute_event_selector)
+                ns, ss = self.event_expansion(description, None)
                 es = list(
                     map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
                                                                             data={'text': 'hello'}),
@@ -208,16 +215,15 @@ class Analyst:
             analyst_log.info('meet unhandled error when valid path')
             import inspect
             stacks = inspect.stack()
-            log = open('error_log' + str(int(time.time())) + '.txt', 'w')
             s = ''
             for stack in stacks:
                 f = stack.frame
-                s += f.f_lineno + "\n"
+                s += str(f.f_lineno) + "\n"
                 r = {k: v for k, v in f.f_locals.items()}
                 for v in r.values():
                     if hasattr(v, '__dict__'):
                         s += v.__dict__() + '\n'
-                print(s, file=log)
+                # print(s, file=log)
             return None, None
 
     def dynamic_match_widget(self, description):
@@ -265,21 +271,6 @@ class Analyst:
                 analyst_log.info(f'have calculate {(index / count) * 100}% static widget...')
         node_with_confidences = sorted(node_with_confidences, key=lambda x: -x.confidence)
         node_with_confidences = map(lambda x: x.node, node_with_confidences)
-        # f.append(
-        #     filter,
-        #     lambda x: x['resource-id'] and 'Layout' not in x['class']
-        # ).append(
-        #     map,
-        #     lambda x: self.confidence.confidence_with_selector(x, description)
-        # ).append(
-        #     sorted,
-        #     lambda x: -x.confidence
-        # ).append(
-        #     map,
-        #     lambda x: x.node
-        # )
-        # candidate = f.do()
-        # r_end = 5 if len(candidate) > 5 else len(candidate)
         return node_with_confidences
 
     def help(self):

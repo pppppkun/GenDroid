@@ -254,18 +254,20 @@ class DataBase:
                 result.append(widget)
         return result
 
+    def get_origin_widget_text(self, rid):
+        for widget in self.widgets:
+            if widget.get_resource_id() == rid:
+                return widget
+        return None
+
 
 if __name__ == '__main__':
     db = DataBase('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/decompile',
                   '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out',
-                  'org.billthefarmer.currency')
+                  'com.simplemobiletools.calendar.pro')
     n = 0
     atm = open('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/todo/out/atm.gv', 'r').read()
     # '2131296532'
     for widget in db.widgets:
-        if widget.resource_id == 'bt_new_task_ok':
-            print(widget.text)
-    # for widget in db.widgets:
-    #     if 'EditText' in widget.get_class():
-    #         if widget.id in atm:
-    #             print(widget.resource_id, widget.id)
+        if 'EditText' in widget.get_class():
+            print(widget.resource_id, widget.hint)

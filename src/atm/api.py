@@ -1,6 +1,9 @@
 import os
 import logging
+import time
+
 from atm.event import VirtualEvent
+from threading import Timer
 
 api_log = logging.getLogger('api')
 api_log.setLevel(logging.DEBUG)
@@ -23,21 +26,31 @@ def set_app(apk_folder, app_name):
     apk = os.path.join(apk_folder, app_name + ".apk")
     decompile = os.path.join(apk_folder, 'decompile')
     out = os.path.join(apk_folder, 'out')
-    api_log.info(f'mkdir {decompile}, {out}')
+    screenshot = os.path.join(apk_folder, 'screenshots')
+    api_log.info(f'mkdir {decompile}, {out}, {screenshot}')
     os.system(f'mkdir {decompile}')
     os.system(f'mkdir {out}')
+    os.system(f'mkdir {screenshot}')
     api_log.info(f'decompiler {apk} to {decompile}')
     os.system(f'apktool d {apk} -f -o {decompile} > /dev/null')
     # api_log.info(f'Analysis ATM using TrimDroid to {out}')
     # os.system(f'java -jar {td_path} {apk_folder} {app_name} {out} > /dev/null')
     api_log.info(f'Dynamic Analysis App using Droidbot (BFS)')
-    os.system(f'adb root & adb logcat -c & droidbot -a {apk} -o output -is_emulator -count 300')
+    # adb
+    # root & & adb
+    # logcat - c | | adb
+    # logcat - c & & droidbot - a
+    # simpleCalendarPro.apk - o
+    # output - is_emulator - policy
+    # bfs_greedy - count
+    # 100
+    # os.system(f'adb root & adb logcat -c & droidbot -a {apk} -o output -is_emulator -count 300')
     pass
 
 
 class Tester:
-    def __init__(self, apk_folder, app_name):
-        # set_app(apk_folder, app_name)
+    def __init__(self, apk_folder, app_name, timeout=60 * 30):
+        set_app(apk_folder, app_name)
         from atm.device import Device
         from atm.executor import Executor
         from atm.db import DataBase
@@ -55,6 +68,7 @@ class Tester:
         self.__constructor = Constructor(db=self.__db)
         self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
         self.__descriptions = []
+        self.__timeout = timeout
         pass
 
     def add_description(self, description, data=None):
@@ -62,13 +76,24 @@ class Tester:
         self.__descriptions.append(ve)
         return self
 
-    def construct(self):
-        self.__executor.execute(self.__descriptions)
+    def construct(self, file_name=None):
+        try:
+            self.timer = Timer(self.__timeout, self.stop, args=(file_name,))
+            self.timer.start()
+            logging.basicConfig(filename=file_name+'.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            self.__executor.execute(self.__descriptions)
+        except BaseException or SystemExit:
+            logging.info('nice to meet bug')
+        api_log.info('to script')
+        self.__executor.to_scripts(file_name)
         return self
 
-    def print_script(self):
-        self.__executor.to_scripts()
-        return self
+    def stop(self, file_name=None):
+        self.__executor.to_scripts(file_name)
+        self.timer.cancel()
+        api_log.info('timeout!')
+        exit(0)
+
 
 if __name__ == '__main__':
     pass

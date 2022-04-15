@@ -1,9 +1,12 @@
+import os
+import time
 import xml.etree.ElementTree as et
 import uiautomator2 as u2
 from uiautomator2.exceptions import BaseError
 from atm.event import Event, send_event_to_device, build_event
 from androguard.core.bytecodes.apk import APK
 from atm.FSM import FSM
+import copy
 
 
 class Device:
@@ -60,11 +63,11 @@ class Device:
                     #     send_event_to_device[e.action](self, e)
                     #     self.interval()
 
-
             if self.u.info['currentPackageName'] != self.package:
                 return self.gui(), False
             return self.gui(), True
         except BaseError:
+            print(BaseError)
             return self.gui(), False
 
     def select_widget(self, selector):
@@ -80,6 +83,12 @@ class Device:
             if x in selector and selector[x]:
                 new_selector[translate[x]] = selector[x]
         # temp = dict(map(lambda x: (translate[x], selector[x]), selector))
+        w = self.u(**new_selector)
+        if w.exists():
+            return w
+        if 'className' in new_selector and 'EditText' in new_selector['className']:
+            if 'text' in new_selector:
+                new_selector.pop('text')
         return self.u(**new_selector)
 
     def select_widget_wrapper(self, selector):
@@ -100,30 +109,26 @@ class Device:
         # up or lower of text
         else:
             if 'text' in selector and selector['text']:
-                selector['text'] = selector['text'].upper()
-                widget = self.select_widget(selector)
-                return widget.exists()
-            else:
-                return False
-            # if 'text' in selector:
-            #     if selector['text']:
-            #         selector['text'] = selector['text'].upper()
-            #     else:
-            #
-            #     widget = self.select_widget(selector)
-            #     if widget.exists():
-            #         return True
-            #     if 'text' in selector:
-            #         selector.pop('text')
-            #     widget = self.select_widget(selector)
-            #     if widget.exists():
-            #         return True
-            # return False
+                if 'class' in selector and 'EditText' in selector['class']:
+                    new_selector = copy.deepcopy(selector)
+                    new_selector.pop('text')
+                    widget = self.select_widget(new_selector)
+                    return widget.exists()
+                else:
+                    new_selector = copy.deepcopy(selector)
+                    new_selector['text'] = new_selector['text'].upper()
+                    widget = self.select_widget(new_selector)
+                    return widget.exists()
 
     def close_keyboard(self):
         if 'com.google.android.inputmethod.latin' in self.gui():
             self.u.press(key='back')
         self.u.sleep(2)
+
+    def screenshot(self):
+        file_name = str(int(time.time())) + '.png'
+        self.u.screenshot(os.path.join('screenshots', file_name))
+        return file_name
 
     def interval(self):
         self.u.sleep(2)
@@ -174,7 +179,7 @@ class Device:
 
 
 if __name__ == '__main__':
-    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
+    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro.apk')
     # app_node = d.get_ui_info_by_package()
     d = u2.connect()
     var = d(resourceId='org.secuso.privacyfriendlytodolist:id/fab_new_task').info

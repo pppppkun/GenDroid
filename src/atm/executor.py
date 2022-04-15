@@ -1,3 +1,5 @@
+import time
+
 from atm.analyst import Analyst
 from atm.construct import Constructor
 from atm.device import Device
@@ -30,21 +32,25 @@ class Executor:
             src_des = ves[i].description
             tgt_des = ves[i + 1].description
             executor_log.info(f'generating event for "{src_des}"')
+            screenshot = self.device.screenshot()
+            executor_log.info(f'screenshot is {screenshot}')
             src_widget = self.analyst.dynamic_match_widget(src_des)
-            executor_log.info(f'match widget f{src_widget.__str__()}')
+            executor_log.info(f'match widget {src_widget.__str__()}')
             src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None, data=ves[i].data)
             self.device.execute(src_event)
             tgt_widgets = self.analyst.static_match_activity(tgt_des)
             found_path = False
+            i = 0
             for tgt_widget in tgt_widgets:
+                i += 1
+                if i == 5:
+                    break
                 path = self.analyst.calculate_path_between_activity(src_des, tgt_widget)
                 if path is not None:
                     found_path = True
-                    executor_log.info(f'execute path')
+                    executor_log.info(f'execute path with len {len(path)}')
                     events = path[0]
                     self.device.execute(events, is_add_edge=False)
-                    # events = self.constructor.generate_events_from_widget(path)
-                    # self.device.execute(events)
                     break
             if not found_path:
                 # no path have found
@@ -55,12 +61,13 @@ class Executor:
                         ns
                         ),
                 )
+                executor_log.info(f'cannot find any path and auto event expansion with len {len(es)}')
                 self.device.execute(es)
 
         src_des = ves[len(ves) - 1].description
         executor_log.info(f'generating event for "{src_des}"')
         src_widget = self.analyst.dynamic_match_widget(src_des)
-        executor_log.info(f'match widget f{src_widget.__str__()}')
+        executor_log.info(f'match widget {src_widget.__str__()}')
         src_event = self.constructor.generate_events_from_widget(src_widget, None, ves[len(ves) - 1].data)
         self.device.execute(src_event)
 
@@ -68,22 +75,23 @@ class Executor:
         for event in events:
             self.device.execute(event)
 
-    def to_scripts(self):
+    def to_scripts(self, file_name=None):
         scripts = \
             """
 import uiautomator2 as u2
 d = u2.connect()
 d.app_stop('{}')
 d.app_start('{}')
-            """.format(self.device.package, self.device.package)
+""".format(self.device.package, self.device.package)
         for event in self.device.history:
             scripts += event.to_uiautomator2_format() + \
                        """
 d.sleep(3)
 if 'com.google.android.inputmethod.latin' in d.dump_hierarchy():
-   d.press(key='back')
+    d.press(key='back')
 """
-        from yapf.yapflib.yapf_api import FormatCode
-        scripts, _ = FormatCode(scripts)
-        f = open('test_script.py', 'w')
+        # from yapf.yapflib.yapf_api import FormatCode
+        # scripts, _ = FormatCode(scripts)
+        file_name = file_name if file_name is not None else 'test_script.py'
+        f = open(file_name, 'w')
         f.write(scripts)
