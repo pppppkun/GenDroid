@@ -11,6 +11,7 @@ CHECK_CLICK_EVENT = 'check'
 SWIPE_EVENT = 'swipe'
 SCROLL_EVENT = 'scroll'
 SCROLL_EVENT_TO_END = 'scroll_end'
+INTENT_EVENT = 'intent'
 
 KEY_EVENTS = {
     'home',
@@ -37,7 +38,8 @@ event_factory = {
     TOUCH_EVENT: lambda event_data: Event(event_data.action, selector=event_data.selector),
     # SWIPE_EVENT: lambda event_data: Event(event_data.action, selector=event_data.selector,
     #                                   direction=event_data.action_data['direction']),
-    SCROLL_EVENT: lambda event_data: Event(event_data.action, direction=event_data.data['direction'])
+    SCROLL_EVENT: lambda event_data: Event(event_data.action, direction=event_data.data['direction']),
+    INTENT_EVENT: lambda event_data: Event(event_data.action, intent=event_data.data['intent'])
 }
 
 
@@ -57,7 +59,8 @@ send_event_to_device = {
     DRAG_EVENT: lambda device, event: device.select_widget(event.selector).drag_to(event.drag, event.duration),
     TOUCH_EVENT: lambda device, event: device.select_widget(event.selector).click(),
     # SWIPE_EVENT: lambda device, event: device.u.swipe(1000, 1000, 300, 300),
-    SCROLL_EVENT: lambda device, event: scroll_based_direction(device, event)
+    SCROLL_EVENT: lambda device, event: scroll_based_direction(device, event),
+    INTENT_EVENT: lambda device, event: device.u.shell(event.intent)
 
     # DOUBLE_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).double_click()
 }
@@ -72,6 +75,7 @@ def build_event(action, selector, data=None):
 class Event:
     def __init__(self, action, **kwargs):
         self.text = None
+        self.intent = None
         self.action = action
         self.selector = None
         self.confidence = -1

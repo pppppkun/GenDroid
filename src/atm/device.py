@@ -6,7 +6,16 @@ from uiautomator2.exceptions import BaseError
 from atm.event import Event, send_event_to_device, build_event
 from androguard.core.bytecodes.apk import APK
 from atm.FSM import FSM
+import logging
 import copy
+
+device_log = logging.getLogger('device')
+device_log.setLevel(logging.DEBUG)
+device_log_ch = logging.StreamHandler()
+device_log_ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+device_log_ch.setFormatter(formatter)
+device_log.addHandler(device_log_ch)
 
 
 class Device:
@@ -50,24 +59,35 @@ class Device:
                         post_info,
                         e
                     )
-                    # if not self.graph.have_path_between_device_info(post_info, pre_info) and e.action != 'set_text':
-                    #     back_event = build_event(action='back', selector=None, data=None)
-                    #     send_event_to_device[back_event.action](self, back_event)
-                    #     self.interval()
-                    #     back_info = self.app_current_with_gui()
-                    #     self.graph.add_edge(
-                    #         post_info,
-                    #         back_info,
-                    #         back_event
-                    #     )
-                    #     send_event_to_device[e.action](self, e)
-                    #     self.interval()
+                    # 1. try back
+                    # 2. try to re-execute last event
+                    # 3. if no error, add back edge to post_info -> back_info
+                    if not self.graph.have_path_between_device_info(post_info, pre_info) and e.action == 'click':
+                        # try back
+                        back_event = build_event(action='back', selector=None, data=None)
+                        send_event_to_device[back_event.action](self, back_event)
+                        self.interval()
+                        # try to re-execute last event
+                        back_info = self.app_current_with_gui()
+                        try:
+                            send_event_to_device[e.action](self, e)
+                        except BaseError as be:
+                            device_log.error(f'failed to re-execute {e.__str__()} when try to add back edge')
+                            device_log.error(be)
+                        else:
+                            # no error, add back edge from post_info -> back_info
+                            self.interval()
+                            self.graph.add_edge(
+                                post_info,
+                                back_info,
+                                back_event
+                            )
 
             if self.u.info['currentPackageName'] != self.package:
                 return self.gui(), False
             return self.gui(), True
-        except BaseError:
-            print(BaseError)
+        except BaseError as be:
+            device_log.error(be)
             return self.gui(), False
 
     def select_widget(self, selector):

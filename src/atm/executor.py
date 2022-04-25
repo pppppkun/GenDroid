@@ -66,6 +66,8 @@ class Executor:
 
         src_des = ves[len(ves) - 1].description
         executor_log.info(f'generating event for "{src_des}"')
+        screenshot = self.device.screenshot()
+        executor_log.info(f'screenshot is {screenshot}')
         src_widget = self.analyst.dynamic_match_widget(src_des)
         executor_log.info(f'match widget {src_widget.__str__()}')
         src_event = self.constructor.generate_events_from_widget(src_widget, None, ves[len(ves) - 1].data)
@@ -85,7 +87,7 @@ d.app_start('{}')
 """.format(self.device.package, self.device.package)
         for event in self.device.history:
             scripts += event.to_uiautomator2_format() + \
-                       """
+"""
 d.sleep(3)
 if 'com.google.android.inputmethod.latin' in d.dump_hierarchy():
     d.press(key='back')

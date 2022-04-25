@@ -84,7 +84,7 @@ class FSM:
             for i in range(len(path) - 1):
                 n1 = path[i]
                 n2 = path[i + 1]
-                # priority Touch/LongTouch -> SetText -> Scroll
+                # priority Touch/LongTouch -> SetText -> KeyEvent -> intent
                 candidate_edge = None
                 for j in range(self.g.number_of_edges(n1, n2)):
                     edge = self.g.edges[(n1, n2, j)]['edge']
@@ -92,8 +92,7 @@ class FSM:
                         candidate_edge = Edge.compare_priority_and_return_higher(candidate_edge, edge)
                     else:
                         candidate_edge = edge
-                assert candidate_edge is not None
-                if candidate_edge.priority > 3:
+                if candidate_edge.priority >= Edge.MAX_PRIORITY:
                     p = None
                     break
                 p.append(candidate_edge.to_event_data())
@@ -359,21 +358,22 @@ class State:
 class Edge:
     STATIC = 's'
     DYNAMIC = 'd'
-    STYPE = ['touch', 'long_touch', 'set_text', 'key', 'swipe', 'scroll', 'intent', 'kill_app']
-    DTYPE = ['click', 'long_click', 'set_text',
-             'home',
-             'back',
-             'left',
-             'right',
-             'up',
-             'down',
-             'center',
-             'menu',
-             'volume_up',
-             'volume_down',
-             'volume_mute',
-             'power']
+    STATIC_ACTION_TYPE = ['touch', 'long_touch', 'set_text', 'key', 'intent', 'swipe', 'scroll', 'kill_app']
+    DYNAMIC_ACTION_TYPE = ['click', 'long_click', 'set_text',
+                           'home',
+                           'back',
+                           'left',
+                           'right',
+                           'up',
+                           'down',
+                           'center',
+                           'menu',
+                           'volume_up',
+                           'volume_down',
+                           'volume_mute',
+                           'power']
     D_S_MAP = bidict({'click': 'touch', 'long_click': 'long_touch', 'set_text': 'set_text'})
+    MAX_PRIORITY = STATIC_ACTION_TYPE.index('swipe')
 
     def __init__(self, dic):
         self.edge_type = dic['type']
@@ -389,9 +389,9 @@ class Edge:
 
     def get_priority(self):
         if self.edge_type == Edge.STATIC:
-            return Edge.STYPE.index(self.event_type)
+            return Edge.STATIC_ACTION_TYPE.index(self.event_type)
         if self.edge_type == Edge.DYNAMIC:
-            return Edge.DTYPE.index(self.event_type)
+            return Edge.DYNAMIC_ACTION_TYPE.index(self.event_type)
 
     def __eq__(self, other):
         if type(other) == Edge:
@@ -411,10 +411,9 @@ class Edge:
                     action = S_D_MAP[self.event_type]
                 else:
                     action = self.event_type
+                if action == 'intent':
+                    return EventData(action=action, selector=None, data={'intent': self.event['intent']})
                 import copy
-                # assert 'view' in self.event
-                if 'view' not in self.event:
-                    return None
                 view = copy.deepcopy(self.event['view'])
                 view['resource-id'] = view['resource_id']
                 view['content-desc'] = view['content_description']
@@ -443,49 +442,11 @@ class Edge:
 
 if __name__ == '__main__':
     f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/simpleCalendarPro/output')
-    s = f.states['e096469d7a4f8eb91242a68f6b47eeb1']
-    print(s)
-    # widgets = f.widgets()
-    # for widget in widgets:
-    #     print(widget)
-    # print(len(widgets))
-    #
-    # non_action_view = {
-    #     'Layout',
-    #     'Group',
-    #     'Recycle',
-    #     'Scroll',
-    #     'SeekBar'
-    # }
-    #
-    #
-    # def filter_by_class(node):
-    #     class_ = node['class']
-    #     if class_ is None:
-    #         return False
-    #     result = True
-    #     for view in non_action_view:
-    #         if view in class_:
-    #             result = False
-    #             break
-    #     return result
-    #
-    #
-    # widgets = list(filter(filter_by_class, widgets))
-    # print(len(widgets))
-
-    # for edge in f.edges:
-    #     e = f.edges[edge]
-    #     print(e.event)
-    # print(f.states[s].views)
-    # start = 'dca53e74e20302aaaccdcec2bcf7ae65'
-    # candidate = f.get_states_contain_widget('org.secuso.privacyfriendlytodolist:id/title')
-    # for state in candidate:
-    #     print(state.id)
-    # import uiautomator2 as u2
-    #
-    # d = u2.connect()
-    # app_current = d.app_current()
-    # app_current['gui'] = d.dump_hierarchy()
-    # state, _ = f.get_most_closest_state(app_current)
-    # print(state.id)
+    print(Edge.MAX_PRIORITY)
+    # s = f.states['e096469d7a4f8eb91242a68f6b47eeb1']
+    # edges = f.edges.values()
+    # intent_edge = None
+    # for e in edges:
+    #     print(e.to_event_data())
+    # assert intent_edge
+    # print(intent_edge.to_event_data())

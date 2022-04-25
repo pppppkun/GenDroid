@@ -1,5 +1,3 @@
-import time
-
 from atm.device import Device
 from atm.utils import FunctionWrap
 from atm.db import DataBase
@@ -142,13 +140,13 @@ class Analyst:
             if len(cluster) != 0:
                 break
 
-        _ = []
+        need_to_remove = []
         if will_or_have_execute_event_selector:
             for node in cluster:
                 for selector in will_or_have_execute_event_selector:
                     if node.get('resource-id') == selector['resource-id']:
-                        _.append(node)
-            for node in _:
+                        need_to_remove.append(node)
+            for node in need_to_remove:
                 if node in cluster:
                     cluster.remove(node)
 
