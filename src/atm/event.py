@@ -107,11 +107,15 @@ class Event:
                 temp[translate[x]] = self.selector[x]
         # temp = dict(map(lambda x: (translate[x], self.selector[x]), self.selector))
         param = []
-        for key in temp:
-            param.append(f'{key}=\'{temp[key]}\'')
         if self.action != 'set_text':
+            for key in temp:
+                param.append(f'{key}=\'{temp[key]}\'')
             return 'd({}).{}()'.format(','.join(param), self.action)
         else:
+            if 'text' in temp:
+                temp.pop('text')
+            for key in temp:
+                param.append(f'{key}=\'{temp[key]}\'')
             return 'd({}).{}(\'{}\')'.format(','.join(param), self.action, self.text)
 
 

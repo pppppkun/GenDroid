@@ -91,7 +91,7 @@ class Device:
 
 
 if __name__ == '__main__':
-    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro6.16.1.apk')
+    # d = Device(apk_path='../../benchmark/simpleCalendarPro/simpleCalendarPro.apk')
     # app_node = d.get_ui_info_by_package()
     d = u2.connect()
     # d.info
