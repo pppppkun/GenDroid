@@ -1,3 +1,5 @@
+import copy
+
 import atm.event
 from atm.event import build_event, EventData
 from bidict import bidict
@@ -54,20 +56,31 @@ class FSM:
     def find_path_to_target_widget(self, device, target_widget: dict):
         try:
             src, _ = self.get_most_closest_state(device.app_current_with_gui())
+            if self.__have_out_edge(src):
+                srcs = [src]
+            else:
+                fsm_log.info(f'state {src.id} have not out edge. choose subset of it to find path')
+                srcs = self.__find_state_subset(src)
             tgts = self.get_states_contain_widget(target_widget['resource-id'])
         except:
             fsm_log.error('error to find state.')
             return []
-        fsm_log.info(f'begin to find path between {src.id} {target_widget["resource-id"]}')
         candidate = []
-        for tgt in tgts:
-            if tgt.id == src.id:
-                candidate += []
-            else:
-                candidate += self.__find_path_between_state(src, tgt)
+        for src in srcs:
+            for tgt in tgts:
+                fsm_log.info(f'begin to find path between {src.id} {target_widget["resource-id"]}')
+                if tgt.id == src.id:
+                    candidate += []
+                else:
+                    candidate += self.__find_path_between_state(src, tgt)
+        # for tgt in tgts:
+        #     if tgt.id == src.id:
+        #         candidate += []
+        #     else:
+        #         candidate += self.__find_path_between_state(src, tgt)
         return candidate
 
-    def __find_path_between_state(self, src, tgt):
+    def __find_path_between_state(self, src, tgt, dependence=None):
         paths = nx.all_simple_paths(self.g, src.id, tgt.id)
         paths = list(paths)
         str_of_paths = set()
@@ -101,6 +114,40 @@ class FSM:
             else:
                 candidate.append(p)
         return candidate
+
+    def __find_state_subset(self, src):
+        result = []
+        src_views = src.views
+        src_widget_set = set(map(lambda widget: self.__widget_to_str(widget), src_views))
+        for state in self.states.values():
+            state_views = copy.deepcopy(state.views)
+            state_widget_set = set(map(lambda widget: self.__widget_to_str(widget),
+                                       filter(lambda widget: 'Layout' not in widget['class'], state_views)
+                                       )
+                                   )
+            if state_widget_set.issubset(src_widget_set):
+                result.append(state)
+        return result
+
+    @staticmethod
+    def __widget_to_str(widget):
+        rid = ''
+        text = ''
+        content_desc = ''
+        if 'resource-id' in widget:
+            rid = widget['resource-id']
+        if 'resource_id' in widget:
+            rid = widget['resource_id']
+        if 'text' in widget:
+            text = widget['text']
+        if 'content-desc' in widget:
+            content_desc = widget['content-desc']
+        if 'content_desc' in widget:
+            content_desc = widget['content_desc']
+        rid = '[resource-id]' + rid
+        text = '[text]' + text
+        content_desc = '[content-desc]' + content_desc
+        return rid + text + content_desc
 
     # need test
     # need fix about meet a new state
@@ -256,11 +303,18 @@ class FSM:
     def have_path_between_device_info(self, pre_info, post_info):
         src, _ = self.get_most_closest_state(pre_info)
         tgt, _ = self.get_most_closest_state(post_info)
-        return self.have_path_between_state(src, tgt)
+        return self.__have_path_between_state(src, tgt)
 
-    def have_path_between_state(self, src, tgt):
-        paths = nx.all_simple_paths(self.g, src, tgt)
+    def __have_path_between_state(self, src, tgt):
+        paths = nx.all_simple_paths(self.g, src.id, tgt.id)
+        paths = list(paths)
         return len(paths) != 0
+
+    def __have_out_edge(self, state):
+        for edge in self.edges.values():
+            if edge.src == state.id:
+                return True
+        return False
 
     def widgets(self):
         keys = set()
