@@ -1,6 +1,6 @@
-from atm.widget import Widget
-from atm.db import DataBase
-from atm.event import build_event, event_factory
+from genDroid.widget import Widget
+from genDroid.db import DataBase
+from genDroid.event import build_event, event_factory
 import logging
 
 construct_log = logging.getLogger('construct')

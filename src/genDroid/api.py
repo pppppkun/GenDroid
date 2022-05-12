@@ -2,7 +2,7 @@ import os
 import logging
 import time
 
-from atm.event import VirtualEvent
+from genDroid.event import VirtualEvent
 from threading import Timer
 
 api_log = logging.getLogger('api')
@@ -51,13 +51,13 @@ def set_app(apk_folder, app_name):
 class Tester:
     def __init__(self, apk_folder, app_name, timeout=60 * 30):
         set_app(apk_folder, app_name)
-        from atm.device import Device
-        from atm.executor import Executor
-        from atm.db import DataBase
-        from atm.analyst import Analyst
-        from atm.FSM import FSM
-        from atm.construct import Constructor
-        from atm.confidence import Confidence
+        from genDroid.device import Device
+        from genDroid.executor import Executor
+        from genDroid.db import DataBase
+        from genDroid.analyst import Analyst
+        from genDroid.FSM import FSM
+        from genDroid.construct import Constructor
+        from genDroid.confidence import Confidence
         self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
         self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
@@ -83,7 +83,7 @@ class Tester:
             logging.basicConfig(filename=file_name+'.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             self.__executor.execute(self.__descriptions)
         except BaseException or SystemExit:
-            logging.info('nice to meet bug')
+            api_log.info('nice to meet bug')
         api_log.info('to script')
         self.__executor.to_scripts(file_name)
         return self

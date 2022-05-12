@@ -17,8 +17,8 @@ class CallGraphParser:
         self.group_nodes()
 
     def get_graph_from_dot_file(self):
-        if os.path.exists(os.path.join(self.atm_folder, 'atm.gv')):
-            graphs = pydot.graph_from_dot_file(os.path.join(self.atm_folder, 'atm.gv'))
+        if os.path.exists(os.path.join(self.atm_folder, 'genDroid.gv')):
+            graphs = pydot.graph_from_dot_file(os.path.join(self.atm_folder, 'genDroid.gv'))
             (g2,) = graphs
             G = nx.nx_pydot.from_pydot(g2)
             # remove edges with label "GUI (NULL)"

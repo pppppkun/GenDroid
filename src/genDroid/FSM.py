@@ -1,9 +1,9 @@
 import copy
 
-import atm.event
-from atm.event import build_event, EventData
+import genDroid.event
+from genDroid.event import build_event, EventData
 from bidict import bidict
-from atm.widget import Widget
+from genDroid.widget import Widget
 import networkx as nx
 import os
 import json
@@ -154,7 +154,7 @@ class FSM:
     def add_edge(self, src, tgt, event):
         assert src['activity'], tgt['activity']
         assert src['gui'], tgt['gui']
-        assert type(event) == atm.event.Event
+        assert type(event) == genDroid.event.Event
         src_state, _ = self.get_most_closest_state(src)
         tgt_state, score = self.get_most_closest_state(tgt)
         if score < 0.9:

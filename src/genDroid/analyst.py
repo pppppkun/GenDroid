@@ -1,10 +1,11 @@
-from atm.device import Device
-from atm.utils import FunctionWrap
-from atm.db import DataBase
-from atm.widget import Widget
-from atm.construct import Constructor
-from atm.FSM import FSM
-from atm.event import KEY_EVENTS
+from genDroid.device import Device
+from genDroid.utils import FunctionWrap
+from genDroid.db import DataBase
+from genDroid.widget import Widget
+from genDroid.construct import Constructor
+from genDroid.FSM import FSM
+from genDroid.event import KEY_EVENTS
+import copy
 import logging
 import xml.etree.ElementTree as et
 
@@ -45,6 +46,36 @@ class Analyst:
         self.db = data_base
         self.constructor = Constructor(self.db)
 
+    def try_back_without_restart(self, events, state):
+        analyst_log.info('try back to checkpoint without restart')
+        index = len(events) - 1
+        while index >= 0:
+            event = events[index]
+            new_event = copy.deepcopy(event)
+            if event.action == 'back':
+                if index >= 2:
+                    index -= 2
+                if index < 2:
+                    # todo find a way from snow -> sA
+                    # briefly return false now
+                    return False
+            elif event.action == 'set_text':
+                new_event.text = ''
+                pass
+            elif event.action == 'click':
+                # 1. checkbox
+                # 2. button
+                new_event.action = 'back'
+                pass
+            else:
+                return False
+            _, result = self.device.execute(new_event, is_add_edge=False)
+            if not result:
+                return False
+
+        now_state, match = self.graph.get_most_closest_state(self.device.app_current_with_gui())
+        return now_state.id == state.id
+
     def calculate_path_between_activity(self, description, widget):
 
         paths = self.graph.find_path_to_target_widget(self.device, widget)
@@ -61,6 +92,7 @@ class Analyst:
             return None
         analyst_log.info('begin to valid path')
         cp = self.device.set_checkpoint()
+        state, _ = self.graph.get_most_closest_state(self.device.app_current_with_gui())
         i = 0
         for path in paths:
             if i == 15:
@@ -68,8 +100,10 @@ class Analyst:
             analyst_log.info(f'valid {i}-th path')
             i += 1
             events, scores = self.valid_path(path, description, widget)
-            if events:
+            if events and scores:
                 candidate.append([events, scores])
+            if self.try_back_without_restart(events, state):
+                continue
             self.device.reset(cp)
             if len(candidate) == 5:
                 break
@@ -201,14 +235,14 @@ class Analyst:
 
                 else:
                     analyst_log.info(f'can\'t find widget {selector["resource-id"]} in valid')
-                    return None, None
+                    return events, None
             t = self.device.exists_widget(w_target)
             if t:
                 analyst_log.info('successfully valid path')
                 return events, scores
             else:
                 analyst_log.info(f'can\'t find widget {w_target} in valid')
-                return None, None
+                return events, None
         except:
             analyst_log.info('meet unhandled error when valid path')
             import inspect
@@ -222,7 +256,7 @@ class Analyst:
                     if hasattr(v, '__dict__'):
                         s += v.__dict__() + '\n'
                 # print(s, file=log)
-            return None, None
+            return events, None
 
     def dynamic_match_widget(self, description):
         """

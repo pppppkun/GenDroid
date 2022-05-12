@@ -1,8 +1,6 @@
-import time
-
-from atm.analyst import Analyst
-from atm.construct import Constructor
-from atm.device import Device
+from genDroid.analyst import Analyst
+from genDroid.construct import Constructor
+from genDroid.device import Device
 import logging
 
 executor_log = logging.getLogger('executor')

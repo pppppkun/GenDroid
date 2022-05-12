@@ -3,9 +3,9 @@ import time
 import xml.etree.ElementTree as et
 import uiautomator2 as u2
 from uiautomator2.exceptions import BaseError
-from atm.event import Event, send_event_to_device, build_event
+from genDroid.event import Event, send_event_to_device, build_event
 from androguard.core.bytecodes.apk import APK
-from atm.FSM import FSM
+from genDroid.FSM import FSM
 import logging
 import copy
 
@@ -64,6 +64,7 @@ class Device:
                     # 3. if no error, add back edge to post_info -> back_info
                     if not self.graph.have_path_between_device_info(post_info, pre_info) and e.action == 'click':
                         # try back
+                        device_log.info('try to add back-edge')
                         back_event = build_event(action='back', selector=None, data=None)
                         send_event_to_device[back_event.action](self, back_event)
                         self.interval()
@@ -74,6 +75,9 @@ class Device:
                         except BaseError as be:
                             device_log.error(f'failed to re-execute {e.__str__()} when try to add back edge')
                             device_log.error(be)
+                            # recovery
+                            device_log.info('try to recovery to last event')
+                            self.reset(len(self.history))
                         else:
                             # no error, add back edge from post_info -> back_info
                             self.interval()
@@ -87,6 +91,7 @@ class Device:
                 return self.gui(), False
             return self.gui(), True
         except BaseError as be:
+            device_log.error('can not execute event')
             device_log.error(be)
             return self.gui(), False
 

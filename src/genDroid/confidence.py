@@ -4,8 +4,8 @@ import xml.etree.ElementTree as et
 import spacy
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
-from atm.widget import Widget
-from atm.utils import IRRELEVANT_WORDS
+from genDroid.widget import Widget
+from genDroid.utils import IRRELEVANT_WORDS
 import enchant
 
 d = enchant.Dict("en_US")
@@ -70,7 +70,7 @@ def get_node_attribute_values(node: et.Element):
     return result
 
 
-def get_attribute_based_class(node: dict):
+def get_attribute_base_on_class(node: dict):
     clazz = node['class'].lower()
     text = node['text']
     content_desc = node['content-desc']
@@ -129,7 +129,7 @@ BERT = 'model'
 select_function = {
     SELECT_MOST_DIRECT: get_most_important_attribute,
     SELECT_ALL: get_node_attribute_values,
-    SELECT_BASED_CLASS: get_attribute_based_class
+    SELECT_BASED_CLASS: get_attribute_base_on_class
 }
 calculate_function = {
     CALCULATE_MAX: max,
