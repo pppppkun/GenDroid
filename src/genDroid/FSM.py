@@ -1,4 +1,5 @@
 import copy
+import traceback
 
 import genDroid.event
 from genDroid.event import build_event, EventData
@@ -46,7 +47,6 @@ class FSM:
                 event = json.load(open(event, 'r'))
             except json.decoder.JSONDecodeError:
                 continue
-                # print(event)
             event['type'] = Edge.STATIC
             edge = Edge(event)
             self.g.add_edge(edge.src, edge.tgt, edge=edge)
@@ -60,15 +60,20 @@ class FSM:
                 srcs = [src]
             else:
                 fsm_log.info(f'state {src.id} have not out edge. choose subset of it to find path')
-                srcs = self.__find_state_subset(src)
+                # srcs = self.__find_state_subset(src)
+                srcs = self.__find_same_activity_state(src)
+                # 1. find the state with same activity
+                # 2. find path
+                # 3. filter path using first widget.
             tgts = self.get_states_contain_widget(target_widget['resource-id'])
         except:
             fsm_log.error('error to find state.')
+            traceback.print_exc()
             return []
         candidate = []
         for src in srcs:
             for tgt in tgts:
-                fsm_log.info(f'begin to find path between {src.id} {target_widget["resource-id"]}')
+                fsm_log.info(f'begin to find path between {src.id} {tgt.id}')
                 if tgt.id == src.id:
                     candidate += []
                 else:
@@ -80,7 +85,7 @@ class FSM:
         #         candidate += self.__find_path_between_state(src, tgt)
         return candidate
 
-    def __find_path_between_state(self, src, tgt, dependence=None):
+    def __find_path_between_state(self, src, tgt):
         paths = nx.all_simple_paths(self.g, src.id, tgt.id)
         paths = list(paths)
         str_of_paths = set()
@@ -118,16 +123,23 @@ class FSM:
     def __find_state_subset(self, src):
         result = []
         src_views = src.views
-        src_widget_set = set(map(lambda widget: self.__widget_to_str(widget), src_views))
+        src_widget_set = set(map(lambda widget: self.__widget_to_str(widget),
+                                 filter(lambda widget: 'Layout' not in widget['class'], src_views)
+                                 )
+                             )
         for state in self.states.values():
             state_views = copy.deepcopy(state.views)
-            state_widget_set = set(map(lambda widget: self.__widget_to_str(widget),
-                                       filter(lambda widget: 'Layout' not in widget['class'], state_views)
-                                       )
-                                   )
-            if state_widget_set.issubset(src_widget_set):
+            state_views = filter(lambda widget: 'Layout' not in widget['class'] and 'TextView' not in widget['class'],
+                                 state_views)
+            state_views = map(lambda widget: self.__widget_to_str(widget), state_views)
+            state_views = filter(lambda widget: 'android:id' not in widget, state_views)
+            state_widget_set = set(state_views)
+            if state_widget_set.issubset(src_widget_set) and state.id != src.id:
                 result.append(state)
         return result
+
+    def __find_same_activity_state(self, src):
+        return list(filter(lambda state: state.activity == src.activity, self.states.values()))
 
     @staticmethod
     def __widget_to_str(widget):
@@ -142,11 +154,15 @@ class FSM:
             text = widget['text']
         if 'content-desc' in widget:
             content_desc = widget['content-desc']
-        if 'content_desc' in widget:
-            content_desc = widget['content_desc']
-        rid = '[resource-id]' + rid
-        text = '[text]' + text
-        content_desc = '[content-desc]' + content_desc
+        if 'content_description' in widget:
+            content_desc = widget['content_description']
+
+        def empty_or_other(s):
+            return s if s is not None else ''
+
+        rid = '[resource-id]' + empty_or_other(rid)
+        text = '[text]' + empty_or_other(text)
+        content_desc = '[content-desc]' + empty_or_other(content_desc)
         return rid + text + content_desc
 
     # need test
@@ -159,6 +175,8 @@ class FSM:
         tgt_state, score = self.get_most_closest_state(tgt)
         if score < 0.9:
             tgt_state = self.add_node(tgt)
+        if self.__find_path_between_state(src_state, tgt_state):
+            return
         fsm_log.info(f'add edge between {src_state.id} {tgt_state.id} {event.event_str()}')
         for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
             edge = self.g.edges[(src_state.id, tgt_state.id, i)]['edge']
@@ -306,9 +324,7 @@ class FSM:
         return self.__have_path_between_state(src, tgt)
 
     def __have_path_between_state(self, src, tgt):
-        paths = nx.all_simple_paths(self.g, src.id, tgt.id)
-        paths = list(paths)
-        return len(paths) != 0
+        return nx.has_path(self.g, src.id, tgt.id)
 
     def __have_out_edge(self, state):
         for edge in self.edges.values():
@@ -495,9 +511,45 @@ class Edge:
 
 
 if __name__ == '__main__':
-    f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/simpleCalendarPro/output')
-    print(Edge.MAX_PRIORITY)
-    # s = f.states['e096469d7a4f8eb91242a68f6b47eeb1']
+    f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/notify1/output')
+    s = f.states['adfee69994dd63723fb78b4c14101de3']
+
+
+    def widget_to_str(widget):
+        rid = ''
+        text = ''
+        content_desc = ''
+        if 'resource-id' in widget:
+            rid = widget['resource-id']
+        if 'resource_id' in widget:
+            rid = widget['resource_id']
+        if 'text' in widget:
+            text = widget['text']
+        if 'content-desc' in widget:
+            content_desc = widget['content-desc']
+        if 'content_description' in widget:
+            content_desc = widget['content_description']
+
+        def empty_or_other(s):
+            return s if s is not None else ''
+
+        rid = '[resource-id]' + empty_or_other(rid)
+        text = '[text]' + empty_or_other(text)
+        content_desc = '[content-desc]' + empty_or_other(content_desc)
+        return rid + text + content_desc
+
+    # state_views = s.views
+    # state_views = list(
+    #     filter(lambda widget: 'Layout' not in widget['class'] and 'TextView' not in widget['class'], state_views))
+    # state_views = list(map(lambda widget: widget_to_str(widget), state_views))
+    # state_views = list(filter(lambda widget: 'android:id' not in widget, state_views))
+    # state_widget_set = set(state_views)
+    # state_widget_set = set(map(lambda widget: widget_to_str(widget),
+    #                            filter(lambda widget: 'Layout' not in widget['class'], state_views)
+    #                            )
+    #                        )
+    # for i in state_widget_set:
+    #     print(i)
     # edges = f.edges.values()
     # intent_edge = None
     # for e in edges:
