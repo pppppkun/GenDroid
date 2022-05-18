@@ -1,5 +1,18 @@
 import xml.etree.ElementTree as et
 
+ICON_SEMANTIC = ['explore', 'add', 'lock', 'follow', 'minus', 'flash', 'email', 'search', 'arrow_downward', 'pause',
+                 'book', 'date_range', 'filter_list', 'arrow_upward', 'expand_less', 'av_rewind', 'help', 'close',
+                 'arrow_backward', 'navigation', 'dashboard', 'arrow_forward', 'weather', 'info', 'redo', 'folder',
+                 'more', 'emoji', 'chat', 'volume', 'visibility', 'thumbs_up', 'file_download', 'playlist', 'stop',
+                 'repeat', 'expand_more', 'shop', 'flight', 'reply', 'location', 'undo', 'photo', 'call', 'star',
+                 'list', 'delete', 'share', 'warning', 'avatar', 'build', 'play', 'dialpad', 'settings', 'layers',
+                 'time', 'videocam', 'filter', 'send', 'power', 'gift', 'cart', 'music', 'av_forward', 'refresh',
+                 'save', 'copy', 'launch', 'group', 'font', 'skip_next', 'history', 'location_crosshair', 'edit',
+                 'swap', 'attach_file', 'skip_previous', 'facebook', 'globe', 'thumbs_down', 'description',
+                 'notifications', 'wallpaper', 'bluetooth', 'network_wifi', 'compare', 'home', 'fullscreen', 'check',
+                 'twitter', 'national_flag', 'microphone', 'sliders', 'favorite', 'menu', 'zoom_out', 'label',
+                 'bookmark', 'switcher']
+
 
 class FunctionWrap:
     def __init__(self, _data, f=None, _lambda=None):

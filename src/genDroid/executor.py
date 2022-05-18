@@ -33,6 +33,7 @@ class Executor:
             screenshot = self.device.screenshot()
             executor_log.info(f'screenshot is {screenshot}')
             src_widget = self.analyst.dynamic_match_widget(src_des)
+            self.analyst.analyst_mode(src_widget)
             executor_log.info(f'match widget {src_widget.__str__()}')
             src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None, data=ves[i].data)
             self.device.execute(src_event)

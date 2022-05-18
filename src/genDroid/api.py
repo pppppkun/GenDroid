@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+import traceback
 
 from genDroid.event import VirtualEvent
 from threading import Timer
@@ -83,6 +84,7 @@ class Tester:
             logging.basicConfig(filename=file_name+'.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             self.__executor.execute(self.__descriptions)
         except BaseException or SystemExit:
+            traceback.print_exc()
             api_log.info('nice to meet bug')
         api_log.info('to script')
         self.__executor.to_scripts(file_name)
