@@ -1,6 +1,6 @@
 import os
 import time
-import xml.etree.ElementTree as et
+import traceback
 import uiautomator2 as u2
 from uiautomator2.exceptions import BaseError
 from genDroid.event import Event, send_event_to_device, build_event
@@ -90,9 +90,9 @@ class Device:
             if self.u.info['currentPackageName'] != self.package:
                 return self.gui(), False
             return self.gui(), True
-        except BaseError as be:
+        except BaseError:
             device_log.error('can not execute event')
-            device_log.error(be)
+            traceback.print_exc()
             return self.gui(), False
 
     def select_widget(self, selector):
@@ -154,6 +154,12 @@ class Device:
         file_name = str(int(time.time())) + '.png'
         self.u.screenshot(os.path.join('screenshots', file_name))
         return file_name
+
+    def widget_screenshot(self, widget):
+        if self.exists_widget(widget):
+            return self.select_widget(widget).screenshot()
+        else:
+            return None
 
     def interval(self):
         self.u.sleep(2)
