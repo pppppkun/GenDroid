@@ -1,3 +1,5 @@
+import traceback
+
 from genDroid.device import Device
 from genDroid.utils import FunctionWrap
 from genDroid.db import DataBase
@@ -5,6 +7,8 @@ from genDroid.widget import Widget
 from genDroid.construct import Constructor
 from genDroid.FSM import FSM
 from genDroid.event import KEY_EVENTS
+from genDroid.utils import ICON_SEMANTIC
+from src.model.icon_semantic import class_index
 import copy
 import logging
 import xml.etree.ElementTree as et
@@ -45,6 +49,8 @@ class Analyst:
         self.graph = graph
         self.db = data_base
         self.constructor = Constructor(self.db)
+        self.path_count_threshold = 1
+        self.mode = ''
 
     def try_back_without_restart(self, events, state):
         analyst_log.info('try back to checkpoint without restart')
@@ -63,6 +69,10 @@ class Analyst:
                 new_event.text = ''
                 pass
             elif event.action == 'click':
+                selector = event.selector
+                widget = self.device.select_widget_wrapper(selector)
+                if 'checkbox' in widget['class'].lower():
+                    new_event.action = 'click'
                 # 1. checkbox
                 # 2. button
                 new_event.action = 'back'
@@ -95,7 +105,7 @@ class Analyst:
         state, _ = self.graph.get_most_closest_state(self.device.app_current_with_gui())
         i = 0
         for path in paths:
-            if i == 15:
+            if i == self.path_count_threshold:
                 break
             analyst_log.info(f'valid {i}-th path')
             i += 1
@@ -118,19 +128,14 @@ class Analyst:
         else:
             return None
 
-    # TODO
     # fix: should remove same widget in path
     def event_expansion(self, description, will_or_have_execute_event_selector=None):
-        # 1. find similarity widget between description and last_widget
-        # 2. add edge into graph
-        # 3. return widget into path
-        # only support edittext now.
-        # search brother node.
-        # search
+
+        # 1. find edit text
+        # 2. 2 situation
+
         gui = self.device.gui()
         gui = et.fromstring(gui)
-        target_parent = None
-        direct_brother = None
         candidate_edit_text = []
         queue = [gui]
         cluster = []
@@ -245,17 +250,7 @@ class Analyst:
                 return events, None
         except:
             analyst_log.info('meet unhandled error when valid path')
-            import inspect
-            stacks = inspect.stack()
-            s = ''
-            for stack in stacks:
-                f = stack.frame
-                s += str(f.f_lineno) + "\n"
-                r = {k: v for k, v in f.f_locals.items()}
-                for v in r.values():
-                    if hasattr(v, '__dict__'):
-                        s += v.__dict__() + '\n'
-                # print(s, file=log)
+            traceback.print_exc()
             return events, None
 
     def dynamic_match_widget(self, description):
@@ -304,6 +299,17 @@ class Analyst:
         node_with_confidences = sorted(node_with_confidences, key=lambda x: -x.confidence)
         node_with_confidences = map(lambda x: x.node, node_with_confidences)
         return node_with_confidences
+
+    def analyst_mode(self, widget: Widget):
+        selector = widget.to_selector()
+        img = self.device.widget_screenshot(selector)
+        if img is None:
+            self.mode = 'none'
+        else:
+            import numpy as np
+            tensor = np.array(img)
+            index = class_index(tensor)
+            self.mode = ICON_SEMANTIC[index]
 
     def help(self):
         pass
