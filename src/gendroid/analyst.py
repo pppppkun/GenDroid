@@ -1,13 +1,13 @@
 import traceback
 
-from genDroid.device import Device
-from genDroid.utils import FunctionWrap
-from genDroid.db import DataBase
-from genDroid.widget import Widget
-from genDroid.construct import Constructor
-from genDroid.FSM import FSM
-from genDroid.event import KEY_EVENTS
-from genDroid.utils import ICON_SEMANTIC
+from gendroid.device import Device
+from gendroid.utils import FunctionWrap
+from gendroid.db import DataBase
+from gendroid.widget import Widget
+from gendroid.construct import Constructor
+from gendroid.FSM import FSM
+from gendroid.event import KEY_EVENTS
+from gendroid.utils import ICON_SEMANTIC
 from src.model.icon_semantic import class_index
 import copy
 import logging
@@ -49,7 +49,7 @@ class Analyst:
         self.graph = graph
         self.db = data_base
         self.constructor = Constructor(self.db)
-        self.path_count_threshold = 1
+        self.path_count_threshold = 5
         self.mode = ''
 
     def try_back_without_restart(self, events, state):
@@ -112,8 +112,8 @@ class Analyst:
             events, scores = self.valid_path(path, description, widget)
             if events and scores:
                 candidate.append([events, scores])
-            if self.try_back_without_restart(events, state):
-                continue
+            # if self.try_back_without_restart(events, state):
+            #     continue
             self.device.reset(cp)
             if len(candidate) == 5:
                 break
@@ -298,6 +298,9 @@ class Analyst:
                 analyst_log.info(f'have calculate {(index / count) * 100}% static widget...')
         node_with_confidences = sorted(node_with_confidences, key=lambda x: -x.confidence)
         node_with_confidences = map(lambda x: x.node, node_with_confidences)
+
+        # need to be sorted by distance from the start state.
+
         return node_with_confidences
 
     def analyst_mode(self, widget: Widget):

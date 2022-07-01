@@ -4,8 +4,8 @@ import xml.etree.ElementTree as et
 import spacy
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
-from genDroid.widget import Widget
-from genDroid.utils import IRRELEVANT_WORDS
+from gendroid.widget import Widget
+from gendroid.utils import IRRELEVANT_WORDS
 import enchant
 
 d = enchant.Dict("en_US")

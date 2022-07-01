@@ -1,6 +1,6 @@
-from genDroid.analyst import Analyst
-from genDroid.construct import Constructor
-from genDroid.device import Device
+from gendroid.analyst import Analyst
+from gendroid.construct import Constructor
+from gendroid.device import Device
 import logging
 
 executor_log = logging.getLogger('executor')
@@ -10,6 +10,8 @@ executor_log_ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 executor_log_ch.setFormatter(formatter)
 executor_log.addHandler(executor_log_ch)
+
+PLACE_HOLDER = ''
 
 
 class Executor:
@@ -29,14 +31,16 @@ class Executor:
         for i in range(len(ves) - 1):
             src_des = ves[i].description
             tgt_des = ves[i + 1].description
-            executor_log.info(f'generating event for "{src_des}"')
-            screenshot = self.device.screenshot()
-            executor_log.info(f'screenshot is {screenshot}')
-            src_widget = self.analyst.dynamic_match_widget(src_des)
-            self.analyst.analyst_mode(src_widget)
-            executor_log.info(f'match widget {src_widget.__str__()}')
-            src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None, data=ves[i].data)
-            self.device.execute(src_event)
+            if src_des != PLACE_HOLDER:
+                executor_log.info(f'generating event for "{src_des}"')
+                screenshot = self.device.screenshot()
+                executor_log.info(f'screenshot is {screenshot}')
+                src_widget = self.analyst.dynamic_match_widget(src_des)
+                self.analyst.analyst_mode(src_widget)
+                executor_log.info(f'match widget {src_widget.__str__()}')
+                src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None,
+                                                                         data=ves[i].data)
+                self.device.execute(src_event)
             tgt_widgets = self.analyst.static_match_activity(tgt_des)
             found_path = False
             i = 0
@@ -89,7 +93,7 @@ d.app_start('{}')
 """
 d.sleep(3)
 if 'com.google.android.inputmethod.latin' in d.dump_hierarchy():
-    d.press(key='back')
+   d.press(key='back')
 """
         # from yapf.yapflib.yapf_api import FormatCode
         # scripts, _ = FormatCode(scripts)

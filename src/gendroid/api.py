@@ -3,7 +3,7 @@ import logging
 import time
 import traceback
 
-from genDroid.event import VirtualEvent
+from gendroid.event import VirtualEvent
 from threading import Timer
 
 api_log = logging.getLogger('api')
@@ -50,17 +50,18 @@ def set_app(apk_folder, app_name):
 
 
 class Tester:
-    def __init__(self, apk_folder, app_name, timeout=60 * 30):
+    def __init__(self, apk_folder, app_name, timeout=60 * 30, have_install=False):
+        self.timer = None
         set_app(apk_folder, app_name)
-        from genDroid.device import Device
-        from genDroid.executor import Executor
-        from genDroid.db import DataBase
-        from genDroid.analyst import Analyst
-        from genDroid.FSM import FSM
-        from genDroid.construct import Constructor
-        from genDroid.confidence import Confidence
+        from gendroid.device import Device
+        from gendroid.executor import Executor
+        from gendroid.db import DataBase
+        from gendroid.analyst import Analyst
+        from gendroid.FSM import FSM
+        from gendroid.construct import Constructor
+        from gendroid.confidence import Confidence
         self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
-        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph)
+        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph, have_install)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
                              atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
         self.__confidence = Confidence()
@@ -70,7 +71,6 @@ class Tester:
         self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
         self.__descriptions = []
         self.__timeout = timeout
-        pass
 
     def add_description(self, description, data=None):
         ve = VirtualEvent(description, data)
@@ -81,12 +81,15 @@ class Tester:
         try:
             self.timer = Timer(self.__timeout, self.stop, args=(file_name,))
             self.timer.start()
-            logging.basicConfig(filename=file_name+'.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            logging.basicConfig(filename=file_name + '.log',
+                                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             self.__executor.execute(self.__descriptions)
         except BaseException or SystemExit:
             traceback.print_exc()
             api_log.info('nice to meet bug')
         api_log.info('to script')
+        if os.path.exists(file_name):
+            file_name = 'I' + file_name
         self.__executor.to_scripts(file_name)
         return self
 

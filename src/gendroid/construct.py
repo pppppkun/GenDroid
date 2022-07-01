@@ -1,6 +1,6 @@
-from genDroid.widget import Widget
-from genDroid.db import DataBase
-from genDroid.event import build_event, event_factory
+from gendroid.widget import Widget
+from gendroid.db import DataBase
+from gendroid.event import build_event, event_factory
 import logging
 
 construct_log = logging.getLogger('construct')

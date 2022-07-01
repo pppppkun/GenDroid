@@ -2,8 +2,8 @@ import os.path
 from bidict import bidict
 from collections import defaultdict, namedtuple
 import xml.etree.ElementTree as et
-from genDroid.widget import Widget
-from genDroid.utils import IRRELEVANT_WORDS
+from gendroid.widget import Widget
+from gendroid.utils import IRRELEVANT_WORDS
 import csv
 
 StringInfo = namedtuple('string_info', ['text', 'id'])

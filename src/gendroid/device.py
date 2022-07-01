@@ -3,9 +3,9 @@ import time
 import traceback
 import uiautomator2 as u2
 from uiautomator2.exceptions import BaseError
-from genDroid.event import Event, send_event_to_device, build_event
+from gendroid.event import Event, send_event_to_device, build_event
 from androguard.core.bytecodes.apk import APK
-from genDroid.FSM import FSM
+from gendroid.FSM import FSM
 import logging
 import copy
 
@@ -19,19 +19,20 @@ device_log.addHandler(device_log_ch)
 
 
 class Device:
-    def __init__(self, apk_path, graph: FSM, serial=None):
-        if serial:
-            self.u = u2.connect(serial)
-        else:
-            self.u = u2.connect()
+    def __init__(self, apk_path, graph: FSM, have_install=False):
+        self.u = u2.connect()
         apk_ = APK(apk_path)
         self.apk_path = apk_path
         self.graph = graph
         self.package = apk_.get_package()
-        if apk_.get_package() in self.get_all_installed_package():
-            self.u.app_uninstall(self.package)
-        self.install_grant_runtime_permissions(apk_path)
-        self.u.app_start(package_name=self.package, wait=True)
+        self.keep_app = have_install
+        if have_install:
+            pass
+        else:
+            if apk_.get_package() in self.get_all_installed_package():
+                self.u.app_uninstall(self.package)
+            self.install_grant_runtime_permissions(apk_path)
+        self.start_app()
         self.u.sleep(2)
         self.history = []
 
@@ -179,9 +180,11 @@ class Device:
     # need a more efficiency way.
     def stop_and_restart(self, events=None):
         self.u.app_stop(self.package)
-        self.u.app_uninstall(self.package)
-        self.install_grant_runtime_permissions(self.apk_path)
-        self.u.app_start(self.package)
+        if not self.keep_app:
+            self.u.app_uninstall(self.package)
+            self.install_grant_runtime_permissions(self.apk_path)
+        # self.u.app_start(self.package)
+        self.start_app()
         if events:
             for event in events:
                 send_event_to_device[event.action](self, event)
@@ -207,6 +210,16 @@ class Device:
 
     def set_checkpoint(self):
         return len(self.history)
+
+    def start_app(self):
+        if 'chrome' in self.package:
+            ret = self.u.shell('am start -n com.android.chrome/com.google.android.apps.chrome.Main', timeout=300)
+            self.u.sleep(2)
+            if ret.exit_code == 1:
+                exit(1)
+        else:
+            self.u.app_start(package_name=self.package, wait=True)
+            self.u.sleep(2)
 
 
 if __name__ == '__main__':

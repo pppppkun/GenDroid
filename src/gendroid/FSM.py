@@ -1,10 +1,10 @@
 import copy
 import traceback
 
-import genDroid.event
-from genDroid.event import build_event, EventData
+import gendroid.event
+from gendroid.event import build_event, EventData
 from bidict import bidict
-from genDroid.widget import Widget
+from gendroid.widget import Widget
 import networkx as nx
 import os
 import json
@@ -56,6 +56,8 @@ class FSM:
     def find_path_to_target_widget(self, device, target_widget: dict):
         try:
             src, _ = self.get_most_closest_state(device.app_current_with_gui())
+            if src is None:
+                src = self.add_node(device.app_current_with_gui())
             if self.__have_out_edge(src):
                 srcs = [src]
             else:
@@ -65,7 +67,7 @@ class FSM:
                 # 1. find the state with same activity
                 # 2. find path
                 # 3. filter path using first widget.
-            tgts = self.get_states_contain_widget(target_widget['resource-id'])
+            tgts = self.get_states_contain_widget(target_widget)
         except:
             fsm_log.error('error to find state.')
             traceback.print_exc()
@@ -170,12 +172,15 @@ class FSM:
     def add_edge(self, src, tgt, event):
         assert src['activity'], tgt['activity']
         assert src['gui'], tgt['gui']
-        assert type(event) == genDroid.event.Event
+        assert type(event) == gendroid.event.Event
         src_state, _ = self.get_most_closest_state(src)
-        tgt_state, score = self.get_most_closest_state(tgt)
-        if score < 0.9:
+        if src_state is None:
+            src_state = self.add_node(src)
+        tgt_state, _ = self.get_most_closest_state(tgt)
+        if tgt_state is None:
             tgt_state = self.add_node(tgt)
-        if self.__find_path_between_state(src_state, tgt_state):
+        # if self.__find_path_between_state(src_state, tgt_state):
+        if self.__have_path_between_state(src_state, tgt_state):
             return
         fsm_log.info(f'add edge between {src_state.id} {tgt_state.id} {event.event_str()}')
         for i in range(self.g.number_of_edges(src_state.id, tgt_state.id)):
@@ -301,26 +306,39 @@ class FSM:
 
     # Have tested
     # resource_id don't have package information
-    def get_states_contain_widget(self, resource_id):
+    # when resource-id's prefix is 'android:id', it lack identification degree
+    def get_states_contain_widget(self, widget: dict):
+        resource_id = str(widget['resource-id'])
         candidate_target_states = []
         for state in self.states.values():
+            if state.type == State.STATIC:
+                rid_key = 'resource_id'
+                content = 'content_description'
+            else:
+                rid_key = 'resource-id'
+                content = 'content-desc'
+            text = 'text'
             for widget_ in state.views:
-                if state.type == State.STATIC:
-                    rid_key = 'resource_id'
-                else:
-                    rid_key = 'resource-id'
                 if widget_[rid_key] is None or len(widget_[rid_key]) == 0:
                     continue
                 else:
                     widget_rid = str(widget_[rid_key])
+                    if resource_id.startswith('android:id'):
+                        if (widget['content-desc'] is not None and widget_[content] == widget['content-desc']) \
+                                or (widget['text'] is not None and widget_[text] == widget['text']):
+                            candidate_target_states.append(state)
+                            continue
                     if widget_rid == resource_id:
                         candidate_target_states.append(state)
-                        break
         return candidate_target_states
 
     def have_path_between_device_info(self, pre_info, post_info):
         src, _ = self.get_most_closest_state(pre_info)
+        if src is None:
+            return False
         tgt, _ = self.get_most_closest_state(post_info)
+        if tgt is None:
+            return False
         return self.__have_path_between_state(src, tgt)
 
     def __have_path_between_state(self, src, tgt):
