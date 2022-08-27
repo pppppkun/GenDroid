@@ -20,7 +20,7 @@ device_log.addHandler(device_log_ch)
 
 class Device:
     def __init__(self, apk_path, graph: FSM, have_install=False):
-        self.u = u2.connect()
+        self.u = u2.connect('emulator-5554')
         apk_ = APK(apk_path)
         self.apk_path = apk_path
         self.graph = graph
@@ -115,6 +115,8 @@ class Device:
         if 'className' in new_selector and 'EditText' in new_selector['className']:
             if 'text' in new_selector:
                 new_selector.pop('text')
+        if 'descriptionContains' in new_selector and 'Show Navigation Drawer' == new_selector['descriptionContains']:
+            new_selector['descriptionContains'] = 'Navigate up'
         return self.u(**new_selector)
 
     def select_widget_wrapper(self, selector):
@@ -147,7 +149,7 @@ class Device:
                     return widget.exists()
 
     def close_keyboard(self):
-        if 'com.google.android.inputmethod.latin' in self.gui():
+        if 'com.google.android.inputmethod.latin:id/key_pos' in self.gui():
             self.u.press(key='back')
         self.u.sleep(2)
 
@@ -163,7 +165,7 @@ class Device:
             return None
 
     def interval(self):
-        self.u.sleep(2)
+        self.u.sleep(4)
         self.close_keyboard()
 
     def app_current(self):
@@ -188,7 +190,7 @@ class Device:
         if events:
             for event in events:
                 send_event_to_device[event.action](self, event)
-                self.u.sleep(2)
+                self.u.sleep(3)
                 self.close_keyboard()
 
     def install_grant_runtime_permissions(self, data):
@@ -205,6 +207,7 @@ class Device:
             return ret.output
 
     def reset(self, checkpoint):
+        self.u.sleep(2)
         self.history = self.history[:checkpoint]
         self.stop_and_restart(events=self.history)
 
@@ -218,8 +221,8 @@ class Device:
             if ret.exit_code == 1:
                 exit(1)
         else:
-            self.u.app_start(package_name=self.package, wait=True)
-            self.u.sleep(2)
+            self.u.app_start(package_name=self.package, wait=True, use_monkey=True)
+            self.u.sleep(4)
 
 
 if __name__ == '__main__':

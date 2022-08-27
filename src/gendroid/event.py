@@ -12,6 +12,7 @@ SWIPE_EVENT = 'swipe'
 SCROLL_EVENT = 'scroll'
 SCROLL_EVENT_TO_END = 'scroll_end'
 INTENT_EVENT = 'intent'
+CLICK_WITH_POS = 'click_with_pos'
 
 KEY_EVENTS = {
     'home',
@@ -28,9 +29,17 @@ KEY_EVENTS = {
     'power'
 }
 
+NON_SELECTOR_EVENTS = {
+    'swipe',
+    'scroll',
+    'intent',
+    'click_with_pos'
+}
+
 event_factory = {
     **{KEY_EVENT: lambda event_data: Event(event_data.action) for KEY_EVENT in KEY_EVENTS},
     CLICK_EVENT: lambda event_data: Event(CLICK_EVENT, selector=event_data.selector),
+    CLICK_WITH_POS: lambda event_data: Event(CLICK_WITH_POS, position=event_data.data['position']),
     LONG_CLICK_EVENT: lambda event_data: Event(LONG_CLICK_EVENT, selector=event_data.selector),
     SET_TEXT_EVENT: lambda event_data: Event(SET_TEXT_EVENT, selector=event_data.selector,
                                              text=event_data.data['text']),
@@ -44,15 +53,32 @@ event_factory = {
 
 
 def scroll_based_direction(device, event):
-    if event.direction == 'end':
+    if event.direction.lower() == 'down':
         device.u(scrollable=True).scroll.toEnd()
-    if event.direction == 'beginning':
+    if event.direction.lower() == 'up':
         device.u(scrollable=True).scroll.toBeginning()
+    device.u.sleep(2)
+
+
+def calculation_position(position):
+    top_left = position[0]
+    down_right = position[1]
+    x = top_left[0] + (down_right[0] - top_left[0]) / 2
+    y = top_left[1] + (down_right[1] - top_left[1]) / 2
+    return x, y
+
+
+def click_using_position(device, event):
+    position = event.position
+    x, y = calculation_position(position)
+    device.u.click(x, y)
+    device.u.sleep(2)
 
 
 send_event_to_device = {
     **{KEY_EVENT: lambda device, event: device.u.keyevent(event.action) for KEY_EVENT in KEY_EVENTS},
     CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
+    CLICK_WITH_POS: lambda device, event: click_using_position(device, event),
     LONG_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).long_click(),
     SET_TEXT_EVENT: lambda device, event: device.select_widget(event.selector).set_text(event.text),
     CHECK_CLICK_EVENT: lambda device, event: device.select_widget(event.selector).click(),
@@ -93,6 +119,14 @@ class Event:
 
     def to_uiautomator2_format(self):
         if not self.selector:
+            if self.action == 'click_with_pos':
+                x, y = calculation_position(self.position)
+                return f'd.click({x}, {y})'
+            if self.action == 'scroll':
+                if self.direction.lower() == 'down':
+                    return f'd(scrollable=True).scroll.toEnd()'
+                if self.direction.lower() == 'up':
+                    return f'd(scrollable=True).scroll.toBeginning()'
             return f'd.keyevent(\'{self.action}\')'
         translate = {
             'text': 'text',

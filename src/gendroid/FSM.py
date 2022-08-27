@@ -77,7 +77,7 @@ class FSM:
             for tgt in tgts:
                 fsm_log.info(f'begin to find path between {src.id} {tgt.id}')
                 if tgt.id == src.id:
-                    candidate += []
+                    candidate += [[]]
                 else:
                     candidate += self.__find_path_between_state(src, tgt)
         # for tgt in tgts:
@@ -85,7 +85,16 @@ class FSM:
         #         candidate += []
         #     else:
         #         candidate += self.__find_path_between_state(src, tgt)
+        candidate.sort(key=lambda x: len(x))
         return candidate
+
+    def find_minimal_distance(self, src, tgt):
+        paths = nx.all_simple_paths(self.g, src.id, tgt.id)
+        distance = sorted(paths, key=lambda x: len(x))
+        if len(distance) == 0:
+            return 100000
+        else:
+            return len(distance[0])
 
     def __find_path_between_state(self, src, tgt):
         paths = nx.all_simple_paths(self.g, src.id, tgt.id)
@@ -174,10 +183,10 @@ class FSM:
         assert src['gui'], tgt['gui']
         assert type(event) == gendroid.event.Event
         src_state, _ = self.get_most_closest_state(src)
-        if src_state is None:
+        if src_state is None or _ < 0.2:
             src_state = self.add_node(src)
         tgt_state, _ = self.get_most_closest_state(tgt)
-        if tgt_state is None:
+        if tgt_state is None or _ < 0.2:
             tgt_state = self.add_node(tgt)
         # if self.__find_path_between_state(src_state, tgt_state):
         if self.__have_path_between_state(src_state, tgt_state):
@@ -327,9 +336,10 @@ class FSM:
                         if (widget['content-desc'] is not None and widget_[content] == widget['content-desc']) \
                                 or (widget['text'] is not None and widget_[text] == widget['text']):
                             candidate_target_states.append(state)
-                            continue
+                            break
                     if widget_rid == resource_id:
                         candidate_target_states.append(state)
+                        break
         return candidate_target_states
 
     def have_path_between_device_info(self, pre_info, post_info):
@@ -361,6 +371,7 @@ class FSM:
         ]
         final_keys = dynamic_keys
         for state in self.states.values():
+            # paths = self.__find_path_between_state(src.id, state.id)
             for widget in state.views:
                 selector = {}
                 selector_key = ''
@@ -373,8 +384,37 @@ class FSM:
                     selector[final_keys[index]] = widget[key]
                     selector_key += widget[key] if widget[key] else 'None'
                 if selector_key not in keys:
+                    # widgets.append([state.id, selector])
                     widgets.append(selector)
                     keys.add(selector_key)
+        return widgets
+
+    def widgets_with_distance(self, app_current):
+        src, _ = self.get_most_closest_state(app_current)
+        keys = set()
+        widgets = []
+        dynamic_keys = [
+            'resource-id', 'content-desc', 'text', 'class'
+        ]
+        static_keys = [
+            'resource_id', 'content_description', 'text', 'class'
+        ]
+        final_keys = dynamic_keys
+        for state in self.states.values():
+            distance = self.find_minimal_distance(src, state)
+            for widget in state.views:
+                selector = {}
+                selector_key = ''
+                key_set = None
+                if state.type == State.DYNAMIC:
+                    key_set = dynamic_keys
+                if state.type == State.STATIC:
+                    key_set = static_keys
+                for index, key in enumerate(key_set):
+                    selector[final_keys[index]] = widget[key]
+                    selector_key += widget[key] if widget[key] else 'None'
+                    # widgets.append([state.id, selector])
+                widgets.append([selector, distance])
         return widgets
 
 
@@ -460,8 +500,9 @@ class Edge:
                            'volume_down',
                            'volume_mute',
                            'power']
-    D_S_MAP = bidict({'click': 'touch', 'long_click': 'long_touch', 'set_text': 'set_text'})
-    MAX_PRIORITY = STATIC_ACTION_TYPE.index('swipe')
+    D_S_MAP = bidict({'click': 'touch', 'long_click': 'long_touch', 'set_text': 'set_text',
+                      'swipe': 'swipe', 'scroll': 'scroll'})
+    MAX_PRIORITY = STATIC_ACTION_TYPE.index('kill_app')
 
     def __init__(self, dic):
         self.edge_type = dic['type']
@@ -501,6 +542,8 @@ class Edge:
                     action = self.event_type
                 if action == 'intent':
                     return EventData(action=action, selector=None, data={'intent': self.event['intent']})
+                if action == 'scroll':
+                    return EventData(action=action, selector=None, data={'direction': self.event['direction']})
                 import copy
                 view = copy.deepcopy(self.event['view'])
                 view['resource-id'] = view['resource_id']
@@ -509,6 +552,9 @@ class Edge:
                 data = None
                 if action == 'set_text':
                     data = {'text': self.event['text']}
+                # if action == 'click':
+                #     if view['resource-id'] is None and view['content-desc'] is None:
+                #         return EventData(action='click_with_pos', selector=view, data={'position': view['bounds']})
                 return EventData(action=action, selector=view, data=data)
         else:
             if self.event_type == 'set_text':
@@ -529,32 +575,49 @@ class Edge:
 
 
 if __name__ == '__main__':
-    f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/notify1/output')
-    s = f.states['adfee69994dd63723fb78b4c14101de3']
+    f = FSM('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/gmail/output')
+    s = f.states['3adebc8dc54482b9771e734d84ec1a72']
+    print(f.find_minimal_distance(f.states['6d72da7106ec9be4919540b4f0806429'],
+                                  f.states['864b9d369a581ca424778f259b6767bf']))
+    # ws = f.widgets()
+    # for w in ws:
+    #     print(w)
+    # for i in range(len(s1)):
+    #     if s1[i] != s2[i]:
+    #         print(s1[i], s2[i])
 
+    # print(len(v1), len(v2))
+    # s1 = '\n'.join([widget['signature'] for widget in v1])
+    # for widget in v1:
+    # print(widget['signature'])
 
-    def widget_to_str(widget):
-        rid = ''
-        text = ''
-        content_desc = ''
-        if 'resource-id' in widget:
-            rid = widget['resource-id']
-        if 'resource_id' in widget:
-            rid = widget['resource_id']
-        if 'text' in widget:
-            text = widget['text']
-        if 'content-desc' in widget:
-            content_desc = widget['content-desc']
-        if 'content_description' in widget:
-            content_desc = widget['content_description']
+    # s2 = ''
+    # s2 = '\n'.join([widget['signature'] for widget in v1])
+    # for widget in v2:
+    #     print(widget['signature'])
 
-        def empty_or_other(s):
-            return s if s is not None else ''
-
-        rid = '[resource-id]' + empty_or_other(rid)
-        text = '[text]' + empty_or_other(text)
-        content_desc = '[content-desc]' + empty_or_other(content_desc)
-        return rid + text + content_desc
+    # def widget_to_str(widget):
+    #     rid = ''
+    #     text = ''
+    #     content_desc = ''
+    #     if 'resource-id' in widget:
+    #         rid = widget['resource-id']
+    #     if 'resource_id' in widget:
+    #         rid = widget['resource_id']
+    #     if 'text' in widget:
+    #         text = widget['text']
+    #     if 'content-desc' in widget:
+    #         content_desc = widget['content-desc']
+    #     if 'content_description' in widget:
+    #         content_desc = widget['content_description']
+    #
+    #     def empty_or_other(s):
+    #         return s if s is not None else ''
+    #
+    #     rid = '[resource-id]' + empty_or_other(rid)
+    #     text = '[text]' + empty_or_other(text)
+    #     content_desc = '[content-desc]' + empty_or_other(content_desc)
+    #     return rid + text + content_desc
 
     # state_views = s.views
     # state_views = list(

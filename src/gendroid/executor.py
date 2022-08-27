@@ -36,7 +36,7 @@ class Executor:
                 screenshot = self.device.screenshot()
                 executor_log.info(f'screenshot is {screenshot}')
                 src_widget = self.analyst.dynamic_match_widget(src_des)
-                self.analyst.analyst_mode(src_widget)
+                # self.analyst.analyst_mode(src_widget)
                 executor_log.info(f'match widget {src_widget.__str__()}')
                 src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None,
                                                                          data=ves[i].data)
@@ -92,7 +92,7 @@ d.app_start('{}')
             scripts += event.to_uiautomator2_format() + \
 """
 d.sleep(3)
-if 'com.google.android.inputmethod.latin' in d.dump_hierarchy():
+if 'com.google.android.inputmethod.latin:id/key_pos' in d.dump_hierarchy():
    d.press(key='back')
 """
         # from yapf.yapflib.yapf_api import FormatCode

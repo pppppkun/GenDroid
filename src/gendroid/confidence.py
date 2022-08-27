@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer, util
 from gendroid.widget import Widget
 from gendroid.utils import IRRELEVANT_WORDS
 import enchant
+import os
 
 d = enchant.Dict("en_US")
 
@@ -20,7 +21,7 @@ PLACE_HOLDER = '@'
 
 resource_id_pattern = re.compile(r'.*:id/(.*)')
 NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/output_model')
 
 
 def predict_use_sbert(description, keys):
@@ -152,6 +153,9 @@ class Confidence:
 
     @staticmethod
     def pos_analysis(description):
+        # spacy can't recognize tap as VERB
+        if description.startswith('tap'):
+            return ['tap'], [description[description.index('tap') + 4:]]
         nlp = spacy.load('en_core_web_sm')
         doc = nlp(description)
         actions = []
@@ -217,7 +221,8 @@ class Confidence:
                         continue
                     sims.append(self.predict(key_info, info))
             # select most similar part with description
-            result.append(np.max(sims))
+            if len(sims) != 0:
+                result.append(np.max(sims))
         if len(result) == 0:
             score = 0
         else:
@@ -237,29 +242,3 @@ class Confidence:
         return predict_function[self.predict_model](description, keys)
 
 
-if __name__ == '__main__':
-
-    d = 'Please make sure the reminders work properly before relying on them. Check your device battery and notification settings, if there is nothing blocking the reminders, or killing the app in the background.'
-    s = 'confirm'
-    print(predict_use_sbert(d, s))
-    #     if key == PLACE_HOLDER:
-    #         continue
-    #     key_actions, key_ui_infos = confidence.pos_analysis(key)
-    #     sims = []
-    #     for key_action in key_actions:
-    #         for action in actions:
-    #             sims.append(self.predict(key_action, action))
-    #     for key_info in key_ui_infos:
-    #         if key_info == '':
-    #             continue
-    #         for info in ui_infos:
-    #             if info == '':
-    #                 continue
-    #             sims.append(self.predict(key_info, info))
-    #     # select most similar part with description
-    #     result.append(np.max(sims))
-    # if len(result) == 0:
-    #     score = 0
-    # else:
-    #     score = np.average(result)
-    # return score

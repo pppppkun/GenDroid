@@ -6,7 +6,7 @@ from gendroid.db import DataBase
 from gendroid.widget import Widget
 from gendroid.construct import Constructor
 from gendroid.FSM import FSM
-from gendroid.event import KEY_EVENTS
+from gendroid.event import KEY_EVENTS, NON_SELECTOR_EVENTS
 from gendroid.utils import ICON_SEMANTIC
 from src.model.icon_semantic import class_index
 import copy
@@ -40,6 +40,16 @@ def filter_by_class(node: et.Element):
             result = False
             break
     return result
+
+
+def filter_by_content(node: et.Element):
+    notification = 'Android System notification:'
+    rid = 'com.android.systemui:id'
+    if notification in node.get('content-desc'):
+        return False
+    if rid in node.get('resource-id'):
+        return False
+    return True
 
 
 class Analyst:
@@ -104,6 +114,14 @@ class Analyst:
         cp = self.device.set_checkpoint()
         state, _ = self.graph.get_most_closest_state(self.device.app_current_with_gui())
         i = 0
+
+        path = paths[0]
+        # target widget in current state
+        if len(path) == 0:
+            analyst_log.info('find target widget in current state')
+            candidate.append(path)
+            return candidate
+
         for path in paths:
             if i == self.path_count_threshold:
                 break
@@ -228,6 +246,12 @@ class Analyst:
                     #     self.confidence.confidence_with_selector(last_widget, description))
                     events.append(event)
                     continue
+                if action in NON_SELECTOR_EVENTS:
+                    analyst_log.info(f'check {len(events)}-th event with action={action}')
+                    event = Constructor.generate_event_from_event_data(event_data)
+                    self.device.execute(event, is_add_edge=False)
+                    events.append(event)
+                    continue
                 if self.device.exists_widget(selector):
                     event = Constructor.generate_event_from_event_data(event_data)
                     last_widget = self.device.select_widget_wrapper(selector)
@@ -267,6 +291,9 @@ class Analyst:
             filter,
             lambda _node: filter_by_class(_node)
         ).append(
+            filter,
+            lambda _node: filter_by_content(_node)
+        ).append(
             map,
             lambda x: self.confidence.confidence_with_node(x, description)
         ).append(
@@ -285,6 +312,8 @@ class Analyst:
         :return:
         """
         # f = FunctionWrap(self.graph.widgets())
+        # if 'gm' in self.device.package:
+        #     return self.static_match_activity_with_distance(description)
         widgets = self.graph.widgets()
         analyst_log.info(f'calculate similarity between "{description}" and static widget')
         widgets = list(filter(lambda x: x['resource-id'] and 'Layout' not in x['class'], widgets))
@@ -298,9 +327,22 @@ class Analyst:
                 analyst_log.info(f'have calculate {(index / count) * 100}% static widget...')
         node_with_confidences = sorted(node_with_confidences, key=lambda x: -x.confidence)
         node_with_confidences = map(lambda x: x.node, node_with_confidences)
+        return node_with_confidences
 
-        # need to be sorted by distance from the start state.
-
+    def static_match_activity_with_distance(self, description):
+        widgets_with_distance = self.graph.widgets_with_distance(self.device.app_current_with_gui())
+        analyst_log.info(f'calculate similarity between "{description}" and static widget')
+        widgets = list(filter(lambda x: x[0]['resource-id'] and 'Layout' not in x[0]['class'], widgets_with_distance))
+        count = len(widgets)
+        node_with_confidences = []
+        for index, widget in enumerate(widgets):
+            n_w_c = self.confidence.confidence_with_selector(widget[0], description)
+            node_with_confidences.append([n_w_c, widget[1]])
+            if index % 20 == 0:
+                analyst_log.info(f'have calculate {(index / count) * 100}% static widget...')
+        node_with_confidences = sorted(node_with_confidences, key=lambda x: -x[0].confidence)[:5]
+        node_with_confidences = sorted(node_with_confidences, key=lambda x: x[1])
+        node_with_confidences = map(lambda x: x[0].node, node_with_confidences)
         return node_with_confidences
 
     def analyst_mode(self, widget: Widget):

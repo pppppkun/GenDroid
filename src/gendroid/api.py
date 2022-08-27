@@ -1,6 +1,5 @@
 import os
 import logging
-import time
 import traceback
 
 from gendroid.event import VirtualEvent
@@ -29,11 +28,12 @@ def set_app(apk_folder, app_name):
     out = os.path.join(apk_folder, 'out')
     screenshot = os.path.join(apk_folder, 'screenshots')
     api_log.info(f'mkdir {decompile}, {out}, {screenshot}')
-    os.system(f'mkdir {decompile}')
+    if not os.path.exists(decompile):
+        os.system(f'mkdir {decompile}')
+        os.system(f'apktool d {apk} -f -o {decompile} > /dev/null')
     os.system(f'mkdir {out}')
     os.system(f'mkdir {screenshot}')
     api_log.info(f'decompiler {apk} to {decompile}')
-    os.system(f'apktool d {apk} -f -o {decompile} > /dev/null')
     # api_log.info(f'Analysis ATM using TrimDroid to {out}')
     # os.system(f'java -jar {td_path} {apk_folder} {app_name} {out} > /dev/null')
     api_log.info(f'Dynamic Analysis App using Droidbot (BFS)')
@@ -50,7 +50,7 @@ def set_app(apk_folder, app_name):
 
 
 class Tester:
-    def __init__(self, apk_folder, app_name, timeout=60 * 30, have_install=False):
+    def __init__(self, apk_folder, app_name, timeout=60 * 30, have_install=False, is_debug=False):
         self.timer = None
         set_app(apk_folder, app_name)
         from gendroid.device import Device
@@ -59,7 +59,12 @@ class Tester:
         from gendroid.analyst import Analyst
         from gendroid.FSM import FSM
         from gendroid.construct import Constructor
-        from gendroid.confidence import Confidence
+        while True:
+            try:
+                from gendroid.confidence import Confidence
+                break
+            except:
+                pass
         self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
         self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph, have_install)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
@@ -71,6 +76,12 @@ class Tester:
         self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
         self.__descriptions = []
         self.__timeout = timeout
+        self.__is_debug = is_debug
+
+    def pre_condition(self, direction):
+        event = self.__constructor.generate_scroll_event(direction)
+        self.__device.execute(event, is_add_edge=False)
+        return self
 
     def add_description(self, description, data=None):
         ve = VirtualEvent(description, data)
@@ -81,13 +92,18 @@ class Tester:
         try:
             self.timer = Timer(self.__timeout, self.stop, args=(file_name,))
             self.timer.start()
-            logging.basicConfig(filename=file_name + '.log',
-                                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            if not self.__is_debug:
+                logging.basicConfig(filename=file_name + '.log',
+                                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            else:
+                logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             self.__executor.execute(self.__descriptions)
         except BaseException or SystemExit:
             traceback.print_exc()
             api_log.info('nice to meet bug')
         api_log.info('to script')
+        if self.timer.is_alive():
+            self.timer.cancel()
         if os.path.exists(file_name):
             file_name = 'I' + file_name
         self.__executor.to_scripts(file_name)
@@ -100,5 +116,25 @@ class Tester:
         exit(0)
 
 
+def execute_script(path):
+    if type(path) != list:
+        path = [path]
+    for p in path:
+        get_all_test(p)
+
+
+def get_all_test(p):
+    os.system('which python3')
+    files = list(os.listdir(p))
+    for f in files:
+        if f.endswith('.py') and not f.startswith('test'):
+            print(f)
+            mark_file = 'test_' + f + '.log'
+            # if mark_file not in files:
+            # command = 'python3 ' + os.path.join(p, f)
+            # print(command)
+            # os.system(command)
+
+
 if __name__ == '__main__':
-    pass
+    execute_script('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/chrome')

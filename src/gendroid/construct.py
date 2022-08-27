@@ -58,3 +58,8 @@ class Constructor:
     def generate_event_from_event_data(event_data):
         event = event_factory[event_data.action](event_data)
         return event
+
+    @staticmethod
+    def generate_scroll_event(direction):
+        event = build_event('scroll', None, {'direction': direction})
+        return event
