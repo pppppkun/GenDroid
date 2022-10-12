@@ -127,7 +127,10 @@ class Event:
                     return f'd(scrollable=True).scroll.toEnd()'
                 if self.direction.lower() == 'up':
                     return f'd(scrollable=True).scroll.toBeginning()'
+            if self.action == 'intent':
+                return f'd.shell({repr(self.intent)})'
             return f'd.keyevent(\'{self.action}\')'
+
         translate = {
             'text': 'text',
             'content-desc': 'descriptionContains',
@@ -143,13 +146,17 @@ class Event:
         param = []
         if self.action != 'set_text':
             for key in temp:
-                param.append(f'{key}=\'{temp[key]}\'')
+                param.append(f'{key}={repr(temp[key])}')
             return 'd({}).{}()'.format(','.join(param), self.action)
         else:
-            if 'text' in temp:
-                temp.pop('text')
+            # if 'text' in temp:
+            #     temp.pop('text')
             for key in temp:
-                param.append(f'{key}=\'{temp[key]}\'')
+                if 'text' == key:
+                    continue
+                param.append(f'{key}={repr(temp[key])}')
+            if len(param) == 0:
+                param.append(f'text={repr(temp["text"])}')
             return 'd({}).{}(\'{}\')'.format(','.join(param), self.action, self.text)
 
 
