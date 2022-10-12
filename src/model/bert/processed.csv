@@ -1,0 +1,188 @@
+id,description,steps,category,script,reason
+0,turn on wi-fi,click on network & internet and then click on wi-fi the first choice. tap the toggle to turn on wi-fi.,setting,yes,None
+1,show network & internet setting,tap network & internet.,setting,yes,None
+2,turn on the credential storage in security & location in setting,"click security & location, and then click advanced. next, click encryption & credentials, and then finally click trusted credentials under credential storage.",setting,cant,UI
+3,find device in security & location in setting,tap security & location. tap find my device,setting,yes,None
+4,update system,tap system and then click advanced. finally click system update.,setting,cant,UI
+5,show display in setting,click on display.,setting,yes,None
+6,change clock to display time with seconds,tap more icon. click settings. tap display time with seconds.,clock,yes,None
+7,show default app,tap apps & notifications. click default apps.,setting,cant,Graph
+8,enable automatic backup,select system. under system tap to advanced then click backup and choose automatic restore.,setting,cant,UI
+9,modify location permissions to app level,tap security & location. tap location and then turn on app level permissions button.,setting,yes,None
+10,change gmail inbox theme,"click the menu icon, then go to settings choose ppppppkun@gmail.com go to inbox type and select default inbox.",gmail,yes,None
+11,change system font size,tap the display in the settings app. select font size.,setting,cant,Graph
+12,send money using gmail,tap compose. tap attach. click send money finally.,gmail,cant,UI
+13,show the bookmarks,"tap the settings, then click on bookmarks.",chrome,yes,None
+14,reload app,tap more icon. tap reload.,chrome,yes,None
+15,show search engine,tap more icon. click settings. tap search engine.,chrome,yes,None
+16,show assistant cards in photos,tap menu icon. select settings. click assistant cards.,photo,yes,None
+17,remove geo location,tap menu icon. click settings. click remove geo location.,photo,yes,None
+18,show the google photo books,tap the menu button. tap photo books.,photo,cant,UI
+19,turn on wifi,"tap network & internet, then tap wi-fi, then wi-fi preferences. check turn on wi-fi automatically.",setting,cant,UI
+20,turn on the airplane mode,tap network & internet and then tap airplane mode on.,setting,yes,None
+21,show screen lock mode,tap security or security & location and then click screen lock.,setting,yes,None
+22,improve location accuracy in setting,tap security & location. tap location. tap advanced. tap google location accuracy. tap improve location accuracy.,setting,cant,UI
+23,show sleep setting,"tap the display button. press the advanced settings, then click on the sleep button.",setting,yes,None
+24,turn on screen pinning,tap security & location and then advanced. tap on screen pinning and then switch screen pinning on.,setting,cant,UI & Graph
+25,change clock display time to 24-hour format,tap more icon then select settings. tap on change date and time then check use 24-hour format,clock,yes,None
+26,show system app,tap apps & notifications. click see all apps. tap more icon. click show system.,setting,cant,Graph
+27,show about of google app,tap menu icon. click settings. click about.,google,cant,None
+28,import contacts in contacts app,tap the menu icon and then click settings. click import.,contact,duplicated,None
+29,change mail inbox priority,tap menu icon. tap settings. choose ppppppkun@gmail.com. tap inbox type. choose priority inbox.,gmail,yes,None
+30,sync days of mail,"tap menu icon. tap settings. tap ppppppkun@gmail.com. in the data usage section, tap days of mail to sync.",gmail,yes,None
+31,send email in gmail,tap menu icon. click sent.,gmail,yes,None
+32,show chrome history,tap more icon. click history.,chrome,yes,None
+33,turn chrome data saver on,tap more icon. click settings. under advanced tap data saver. turn on data saver.,chrome,cant,Graph
+34,turn chrome pop-ups and redirects on,tap more icon. click settings. tap site settings. click pop-ups. turn pop-ups and redirects on,chrome,yes,None
+35,select animation photo,click the assistant then click animation icon.,photo,yes,None
+36,show upload size,click google photos app. tap menu icon. click settings. click backup & sync and then upload size.,photo,yes,None
+37,start a book on google photos,tap menu icon. click photo books. click start a book.,photo,cant,UI
+38,show wi-fi preferences,open settings app then click network & internet. click wi-fi. tap wi-fi preferences.,setting,yes,None
+39,show private dns of network,tap the network & internet button and then tap the advanced button and tap private dns,setting,cant,UI
+40,show click style,"tap more icon then click settings, and then click style button.",clock,yes,None
+41,turn on wi-fi scanning in setting,tap security & location and then location and then advanced and then scanning and turn on wi-fi scanning,setting,cant,UI
+42,open smart lock in setting,tap security & location. finaly click smart lock.,setting,yes,None
+43,bad description,click google. click google account. click data & personalization. under activity controls click device information. turn the setting on.,setting,cant,UI
+44,save screen,tap on the menu icon. and then tap on screen saver.,clock,yes,None
+45,reset all app notification preferences,tap apps & notifications. tap see all apps. tap app info. tap more icon. tap reset app preferences.,setting,cant,Graph
+46,voice input,"in the search bar, tap speak.",google,no,None
+47,show inbox notification in gmail,"tap menu icon. tap settings. then select ppppppkun@gmail.com, and tap inbox notifications.",gmail,cant,UI
+48,insert attach in gmail,tap compose and then tap attach. tap insert from drive.,gmail,yes,None
+49,show all mail in gmail,click on the menu icon and then select all mail,gmail,yes,None
+50,report spam in gmail,in inbox click mail test mail. click more icon at the top right corner. select report spam.,gmail,duplicated,None
+51,show recent tabs in chrome,"tap more icon. finally, click recent tabs.",chrome,yes,None
+52,show help and feedback,tap more icon. click help & feedback.,chrome,yes,None
+53,clear all history,"go to more options, then tap on history and select clear data.",chrome,yes,None
+54,search,click the search.,photo,yes,None
+55,general show setting,tap menu icon. click settings.,google driver,no,None
+56,start new share in google photo,click sharing then the more icon in the search bar. then click start new share.,photo,yes,None
+57,switch wi-fi treat as metered,"open your device's settings app and tap network & internet, then you need click wi-fi. tap the wi-fi network you're connected to. tap advanced and tap click metered. click treat as metered.",setting,cant,UI
+58,add new vpn,open settings app. tap network & internet. click advanced then click vpn. tap add at the top right.,setting,cant,UI
+59,change snooze time in clock app,"tap the more icon, then tap on settings on the menu. finally tap on snooze length.",clock,yes,None
+60,turn on bluetooth scanning option in security & location,click on the security & location option. in that click on the location option under privacy. click on advanced option and then click the scanning option. tap the turn on bluetooth scanning option.,setting,cant,UI
+61,configure virtual keyboard theme,tap system. click languages & input. tap virtual keyboard and then select gboard. tap theme to configure it.,setting,yes,None
+62,manage activity in setting,click google. click google account. click data & personalization at the top. click device information and click manage activity.,setting,cant,UI
+63,show save wi-fi,"open settings. tap network & internet. click wi-fi. if needed, turn on wi-fi. tap saved networks.",setting,yes,None
+64,connect to open wi-fi in setting,click on network & internet then click on wi-fi and then on wi-fi preferences then click connect to open networks,setting,cant,UI
+65,send feedback,"click the menu option, and click send feedback.",google,no,None
+66,bad description,"click menu icon button, go to 'settings', choose account. in notifications, click on 'manage labels' and then click 'important'. at last, click on 'sync messages', and finally click all.",gmail,cant,UI
+67,add contacts,open the contacts.tap add.,contact,yes,None
+68,reply email to message,tap the mail. then click the reply button to reply the email to message,gmail,yes,None
+69,turn off the smart reply of gmail,tap menu icon. click settings. select ppppppkun@gmail.com. turn off smart reply.,gmail,yes,None
+70,show chrome location,"tap more button. click settings, and then site settings. click location.",chrome,yes,None
+71,clear browsing data,"tap more icon at the top right corner. click settings. under advanced, tap privacy. click clear browsing data.",chrome,cant,Graph
+72,clear browsing data with selector,"tap more icon at the top right corner. click settings. under advanced, tap privacy. click clear browsing data.choose time selector. click choose all time. check cookies, media licenses and site data.",chrome,cant,Graph
+73,turn photos face grouping off,tap menu icon. click settings. click group similar faces. turn face grouping off.,photo,yes,None
+74,sync with google drive,tap menu icon. click settings. turn on google drive. tap sync.,photo,yes,None
+75,share photos,tap sharing. tap more icon and then tap skipped suggestions.,photo,cant,UI
+76,close screen saver,tap display and then advanced. click screen saver at the bottom and then when to start. finally select never.,setting,cant,UI & Graph
+77,add new accounts in setting,"tap accounts, and then click add account.",setting,yes,None
+78,modify timers sound,click more icon. then click on settings. then under timers click the word timer sound.,clock,cant,Graph
+79,change keypress sound on virtual keyboard,tap system and tap the languages and input to open it. tap the virtual keyboard and select the gboard option. tap the preferences option and tap on sound on keypress.,setting,cant,Graph
+80,manage activity controls in setting,"tap on google, then tap on google account. tap on the data personalization, finally tap on manage your activity controls.",setting,cant,UI
+81,add wi-fi network in setting,"tap network & internet. click wi-fi. at the end of the list, tap add network.",setting,yes,None
+82,show device information,tap system. click about phone or about tablet or about device,setting,cant,UI
+83,change app access to install unknown apps,"click apps & notifications, then select special app access and finally select install unknown apps.",setting,cant,Graph
+84,sync gmail,tap menu icon. tap settings. click checkbox sync gmail.,gmail,cant,UI
+85,turn vacation responder switch on,tap menu icon. tap settings. choose ppppppkun@gmail.com. tap vacation responder. turn the vacation responder switch on.,gmail,yes,None
+86,turn off smart reply,"open the gmail app. tap the menu icon at the top left corner. click settings. tap ppppppkun@gmail.com. next to smart reply, uncheck the box.",gmail,duplicated,None
+87,show help and feedback,tap menu icon. click help & feedback.,gmail,yes,None
+88,modify payments information,"tap on the more icon in the upper right corner, and then tap on settings. tap on autofill and payments, and then on addresses.",chrome,yes,None
+89,show_site_setting_camera,"open chrome app, then tap the more icon at the top right corner, click settings, and then click site settings, and finally click camera",chrome,yes,None
+90,enable cookies in chrome,open chrome app. tap top right conner three dot. click settings. click to open site settings. tap cookies. tap enable cookies.,chrome,yes,None
+91,search,"click on google photos app, tap the search bar on top of screen",photo,duplicated,None
+92,back up and sync photo,click on google photo icon. tap on menu icon. tap settings on bottom. then tap back up & sync at top.,photo,yes,None
+93,turn on suggested sharing in photos,click on the more icon. next click on settings. click on notifications then click suggested sharing.,photo,cant,UI
+94,modify or disable sleep settings,"tap display. after that, click advanced. after that click on sleep.",setting,yes,None
+95,show device storage,click on storage.,setting,yes,None
+96,add user in setting,"click system and then click the advanced. go to multiple users and click add user, and finally click ok.",setting,cant,UI
+97,import contacts,tap open menu icon. then click settings then click import.,contact,yes,None
+98,Control emergency broadcast notifications,tap apps & notifications and then click emergency alerts.,setting,cant,Graph
+99,show account activity,click google. click google account. select data & personalization at top.tap my activity.,setting,cant,UI
+100,reset network configure,"click system, then click on advanced then reset options. choose the reset wi-fi, mobile & bluetooth. then click on reset settings",setting,cant,UI
+101,show emergency information of emulated device,tab system and then about emulated device and click emergency information,setting,cant,UI
+102,bad description,tap system. click gestures,setting,cant,UI
+103,modify gmail labels,open the test mail. tap more icon at the top right corner. and tap change labels,gmail,yes,None
+104,change to default inbox,tap menu icon. tap settings. choose account. tap inbox type. select default inbox. tap inbox categories.,gmail,yes,None
+105,bad description,open the gmail app. tap test mail.,gmail,yes,None
+106,show more in compose,tap compose mail button and then tap the more icon.,gmail,yes,None
+107,turn off the sync everything in chrome,tap more icon. click settings. click account. click sync. turn off sync everything,chrome,yes,None
+108,turn on the setting which allow sites to send notifications,"tap more icon, click settings.then tap site settings. then tap notifications. turn the setting on finally.",chrome,yes,None
+109,show bookmarks of browser,click on the more icon. then click on bookmarks.,chrome,duplicated,None
+110,free up photo space,tap menu icon. click free up space,photo,yes,None
+111,show device folders,tap the menu icon then open my device folders.,photo,yes,None
+112,show photo books,tap menu icon. click photo books.,photo,cant,UI
+113,show network data usage,under settings choose network & internet then select data usage,setting,yes,None
+114,show alarm on clock,open clock app on device. tap alarm at the top.,clock,yes,None
+115,show multiple users,click on system and then click advanced. click on multiple users.,setting,cant,UI
+116,update system,tap system and then advanced and then system update.,setting,cant,UI
+117,show app notification configure,tap apps & notifications. click notifications.,setting,yes,None
+118,set alart on timer,open timer to set alart.,clock,yes,None
+119,turn use location option off,click security & location. then click location. then turn use location option off.,setting,yes,None
+120,turn on the data saver,tap network & internet. tap data usage. tap data saver. turn on data saver.,setting,yes,None
+121,bad description,tap apps & notifications and then click special app access. click picture-in-picture.,setting,cant,Graph
+122,choice move mail to,open mail. open more icon. click move to.,gmail,yes,None
+123,show more option on mail,tap on the mail. click the more icon.,gmail,yes,None
+124,delete mail,"click the mail, and then tap delete.",gmail,yes,None
+125,show site settings,tap the hamburger menu in the upper right corner. when the menu opens tap on settings. after next menu opens tap on site setting.,chrome,yes,None
+126,add new language on chrome,"touch the more icon. click settings. in advanced, click the languages button. click add language.",chrome,yes,None
+127,blocked site media protected content,tap more icon at the top right corner. click settings and then tap site settings. click media. click protected content. select blocked.,chrome,cant,Graph
+128,change the setting of whether sending usage and crash report,tap on the more icon. tap on settings and then privacy and then usage and crash reports. check the setting box.,chrome,yes,None
+129,back up and sync data,tap menu icon. tap settings. click backup & sync.,photo,duplicated,None
+130,buy more storage on google photos,"click on the menu icon at the top left corner. click on the settings option, click on the back up & sync settings at the very top. click back up & sync. finally, click on buy more storage button.",photo,yes,None
+131,change state of mobile data,click network & internet. click data usage as the third option in the menu. then click mobile data.,setting,yes,None
+132,install app from sd card,tap security & location. tap advanced. tap encryption & credentials.tap install from sd card.,setting,cant,UI
+133,show mobile network,tap network & internet and then tap mobile network.,setting,yes,None
+134,modify configure of text-to-speech output,"click on the accessibility, finally click on the text-to-speech output.",setting,yes,None
+135,turn allow notification dots on,click apps & notifications. click notifications. turn allow notification dots on.,setting,yes,None
+136,Timing with a stopwatch,tap icon stopwatch. click red button start play.,clock,yes,None
+137,bad description,in the top control menu click the battery saver.,None,no,None
+138,show unrestricted data access app,"tap the network and internet button. then, tap the data usage button, and then tap the data saver button. lastly, press unrestricted data.",setting,yes,None
+139,update system,"tap system. click on the last option labeled advanced, from there click on system update",setting,cant,UI
+140,report mail as spam,open the mail. tap the more icon. tap the option report spam,gmail,yes,None
+141,star a mail,touch the mail. touch the star,gmail,yes,None
+142,show email trash,tap menu icon. tap trash.,gmail,yes,None
+143,show privacy of chrome,"tap more icon. click settings. under advanced, tap privacy.",chrome,yes,None
+144,turn off offer to translate pages in other languages,tap more icon at the top right corner. click settings. tap languages. turn off offer to translate pages in other languages.,chrome,yes,None
+145,reset device credentials button,"tap the more icon, then tap on settings, then site settings. then click media and then click protected content. tap on the more icon and then tap on the reset device credentials button.",chrome,cant,Graph
+146,show photo assistant,"click on google photos. at the bottom, tap assistant.",photo,yes,None
+147,create new album,tap albums. click more icon. click new album.,photo,yes,None
+148,turn on data roaming,tap network & internet. tap mobile network and then turn on data roaming. click ok,setting,yes,None
+149,clear credentials,"tap the security & location and then click advanced. click encryption & credentials. under credential storage, tap clear credentials. finally click ok.",setting,cant,UI
+150,bad description,tap google and then google account. then slide to the data & personalization tab and then tap location history. tap location history.,setting,cant,UI
+151,turn on usage & diagnostics,tap google. click more icon. click usage & diagnostics. turn on usage & diagnostics,setting,yes,None
+152,don't show notifications at all when lock screen,click apps & notifications. click notifications. click on lock screen option. select don't show notifications at all.,setting,yes,None
+153,switch style to analog,click on more menu. then select the settings option and after that the style one. chose the analog option.,clock,yes,None
+154,turn on automatically the battery saver,tap on battery and then tap on battery saver. after that tap the switch to turn on automatically the battery saver.,setting,yes,None
+155,turn on app preview messages.,tap google. click app preview messages. turn on app preview messages.,setting,cant,UI
+156,turn on show virtual keyboard,click on system section. click on the languages & input section. click physical keyboard and finally turn on show virtual keyboard.,setting,yes,None
+157,check spam mail,tap menu icon at the top left corner. click spam.,gmail,yes,None
+158,show security of account,click google. click on google account at the top. tap security finally.,setting,cant,Graph
+159,snooze the mail,"click mail, and then tap more icon. click on snooze",gmail,cant,UI
+160,turn off sync everything on chrome,"click more icon. select settings. click the account and click sync. then, turn off sync everything.",chrome,duplicated,None
+161,show chrome bookmarks,tap the more icon and then tap bookmarks.,chrome,duplicated,None
+162,turn site javascript setting on,tap more icon. click settings. tap site settings. tap javascript and then click turn the setting off.,chrome,yes,None
+163,show photo albums,tap the albums icon.,photo,yes,None
+164,show photo trash,tap menu icon. click trash,photo,yes,None
+165,sharing photo,tap sharing. ,photo,cant,UI
+166,show battery setting,tap the battery button.,setting,yes,None
+167,show all trusted credentials,tap settings app. tap security & location and then tap advanced. tap encryption & credentials. tap trusted credentials finally.,setting,cant,UI
+168,bad description,"open up the device's settings app. tap google and then tap google account. at the top, tap data & personalization. at the bottom, tap manage timeline. your device will open google maps google maps. tap more icon at the top right corner. click settings. choose delete all location history at the bottom.",setting,cant,UI
+169,show full device usage,tap on battery. click more icon. click battery usage. tap more icon. click show full device usage.,setting,cant,UI
+170,show all notification content,"tap apps & notifications. tap notifications. then tap on lock screen, and finally tap show all notification content.",setting,yes,None
+171,change clock style to digital,tap more icon. click settings. click style. choose digital.,clock,yes,None
+172,turn off automatic date & time,tap system. then click date & time. turn off automatic date & time. ,setting,yes,None
+173,turn off automatic time zone,tap system. then click date & time. turn off automatic time zone.,setting,yes,None
+174,turn on remove messages after 7 days,tap google. click app preview messages. click manage storage. turn on remove messages after 7 days.,setting,cant,UI
+175,show location,tap security and location and then tap on location.,setting,yes,None
+176,Change picture display strategy,tap menu icon. tap settings. click ppppppkun@gmail.com.tap images. tap always show,gmail,cant,Graph
+177,show started mail,"tap the menu icon, and then tap on starred.",gmail,yes,None
+178,bad description,"open the gmail app. in the top left, tap menu icon. click snoozed.",gmail,cant,UI
+179,encrypt synced data with your own sync passphrase,"click on the more icon, then tap settings. click on account, then click sync, then tap encryption. and finally, click encrypt synced data with your own sync passphrase.",chrome,yes,None
+180,change new tab option,"tap more icon, tap the new tab option.",chrome,yes,None
+181,check chrome downloads,tap more icon. click downloads.,chrome,yes,None
+182,show movie,tap assistant and then tap movie,photo,yes,None
+183,show trash of photo,tap menu icon. click trash.,photo,duplicated,None
+184,turn group similar faces on,tap menu icon. click settings. click group similar faces.,photo,duplicated,None
+185,show about,tap menu icon. click setting. click about,google,no,None
+186,show back up & sync,tap menu. select settings. click back up & sync,photo,duplicated,None
