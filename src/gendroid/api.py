@@ -90,20 +90,21 @@ class Tester:
 
     def construct(self, file_name=None):
         try:
-            self.timer = Timer(self.__timeout, self.stop, args=(file_name,))
-            self.timer.start()
+            # self.timer = Timer(self.__timeout, self.stop, args=(file_name,))
+            # self.timer.start()
             if not self.__is_debug:
                 logging.basicConfig(filename=file_name + '.log',
                                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             else:
                 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            api_log.info(f'now {file_name}')
             self.__executor.execute(self.__descriptions)
         except BaseException or SystemExit:
             traceback.print_exc()
             api_log.info('nice to meet bug')
         api_log.info('to script')
-        if self.timer.is_alive():
-            self.timer.cancel()
+        # if self.timer.is_alive():
+        #     self.timer.cancel()
         if os.path.exists(file_name):
             file_name = 'I' + file_name
         self.__executor.to_scripts(file_name)
