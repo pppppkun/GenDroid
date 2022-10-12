@@ -275,6 +275,8 @@ class Analyst:
         except:
             analyst_log.info('meet unhandled error when valid path')
             traceback.print_exc()
+            import pdb
+            pdb.set_trace()
             return events, None
 
     def dynamic_match_widget(self, description):

@@ -32,6 +32,7 @@ class Device:
             if apk_.get_package() in self.get_all_installed_package():
                 self.u.app_uninstall(self.package)
             self.install_grant_runtime_permissions(apk_path)
+        self.u.app_stop(self.package)
         self.start_app()
         self.u.sleep(2)
         self.history = []

@@ -240,5 +240,3 @@ class Confidence:
 
     def predict(self, description, keys):
         return predict_function[self.predict_model](description, keys)
-
-
