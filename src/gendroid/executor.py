@@ -19,6 +19,7 @@ class Executor:
         self.analyst = analyst
         self.constructor = constructor
         self.device = device
+        self.descriptions = None
         pass
 
     # 1. get widget dynamic and static.
@@ -28,6 +29,7 @@ class Executor:
     # widgets = get_all_widgets()
     # calculated similarity between <widgets source>, <widgets destination>
     def execute(self, ves):
+        self.descriptions = list(map(lambda x : x.description, ves))
         for i in range(len(ves) - 1):
             src_des = ves[i].description
             tgt_des = ves[i + 1].description
@@ -87,7 +89,8 @@ import uiautomator2 as u2
 d = u2.connect()
 d.app_stop('{}')
 d.app_start('{}')
-""".format(self.device.package, self.device.package)
+# {}
+""".format(self.device.package, self.device.package, '.'.join(self.descriptions))
         for event in self.device.history:
             scripts += event.to_uiautomator2_format() + \
 """
