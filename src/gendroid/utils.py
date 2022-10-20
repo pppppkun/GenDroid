@@ -116,3 +116,24 @@ def get_selector_from_dynamic_edge(criteria):
         assert attribute in criteria
         selectors[attribute] = criteria[attribute]
     return selectors
+
+
+def safe_check_key(d, k):
+    if k in d and d[k]:
+        return True
+    else:
+        return False
+
+
+def calculation_position(position):
+    top_left = position[0]
+    down_right = position[1]
+    x = top_left[0] + (down_right[0] - top_left[0]) / 2
+    y = top_left[1] + (down_right[1] - top_left[1]) / 2
+    return x, y
+
+def bounds2list(bounds):
+    s = bounds
+    s = '[' + s + ']'
+    s = s[:s.find(']') + 1] + ',' + s[s.find(']') + 1:]
+    return eval(s)
