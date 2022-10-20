@@ -23,8 +23,9 @@ def from_json_to_csv():
             for s in sample:
                 row = [location_type_int_map[data['location type']]]
                 if data['location type'] == 'null':
-                    row.append(-1)
-                    row.extend([0, 0, 0, 0, 0, 0, 0, 0])
+                    continue
+                    # row.append(-1)
+                    # row.extend([0, 0, 0, 0, 0, 0, 0, 0])
                 if data['location type'] == 'absolute':
                     row.append(data['grid int'])
                     row.extend(data[s]['bounds'])
@@ -40,7 +41,7 @@ def from_json_to_csv():
                 else:
                     row.append(0)
                 rows.append(row)
-    with open('/Users/pkun/PycharmProjects/ui_api_automated_test/decision_data/origin_data.csv', 'w') as f:
+    with open('/Users/pkun/PycharmProjects/ui_api_automated_test/decision_data/only_location_data.csv', 'w') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(headers)
         f_csv.writerows(rows)

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import precision_recall_fscore_support
 from joblib import dump, load
@@ -37,16 +37,26 @@ def train():
     #                                random_state=42, n_jobs=-1)
     # print(rf_random.best_params_)
     # print(rf_random.score(Xtest, Ytest))
-    rf = RandomForestClassifier(
+    rf = RandomForestRegressor(
         **{'n_estimators': 106, 'min_samples_split': 5, 'min_samples_leaf': 4, 'max_features': 'sqrt', 'max_depth': 38,
            'bootstrap': True}, random_state=100)
     rf.fit(Xtrain, Ytrain)
-    print(rf.score(Xtest, Ytest))
+    r = rf.predict(Xtest)
+    r[r >= 0.5] = 1
+    r[r < 0.5] = 0
+    print(len(r[r == Ytest])/len(r))
+    # print(rf.score(Xtest, Ytest))
+    # rf.score(Xtest)
     predict = rf.predict(data)
-    print(predict)
+    predict[predict >= 0.5] = 1
+    predict[predict < 0.5] = 0
+    # print(predict)
     print(precision_recall_fscore_support(label, predict, labels=[1]))
     dump(rf, 'rf.joblib')
 
 
 def predict(x):
     return model.predict(x)
+
+
+train()
