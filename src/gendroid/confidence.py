@@ -2,26 +2,45 @@ import re
 from collections import namedtuple
 import xml.etree.ElementTree as et
 import spacy
+import nltk
+from nltk.corpus import stopwords
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from gendroid.widget import Widget
-from gendroid.utils import IRRELEVANT_WORDS
+from gendroid.utils import IRRELEVANT_WORDS, safe_check_key, calculation_position, bounds2list
+from joblib import load
+from enum import Enum
 import enchant
-import os
+import logging
+
+confidence_log = logging.getLogger('confidence')
+confidence_log.setLevel(logging.DEBUG)
+confidence_log_ch = logging.StreamHandler()
+confidence_log_ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+confidence_log_ch.setFormatter(formatter)
+confidence_log.addHandler(confidence_log_ch)
 
 d = enchant.Dict("en_US")
+precise_nlp = spacy.load('en_core_web_trf')
+quick_nlp = spacy.load('en_core_web_sm')
 
-KEY_ATTRIBUTES = {
+KEY_ATTRIBUTES = [
     'text',
     'content-desc',
     'resource-id',
-}
+]
 
 PLACE_HOLDER = '@'
 
 resource_id_pattern = re.compile(r'.*:id/(.*)')
 NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
 model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/output_model')
+decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/rf.joblib')
+
+
+def process_resource_id(x): return resource_id_pattern.match(x).group(1).replace('/', ' ').replace('_',
+                                                                                                   ' ')
 
 
 def predict_use_sbert(description, keys):
@@ -33,41 +52,32 @@ def predict_use_sbert(description, keys):
 
 def predict_use_bert(description, keys):
     from model.bert.api import predict_two_sentence
-    # manhattan_sim = [predict_two_sentence(description, key)[0] for key in keys]
-    # manhattan_sim.sort(key=lambda x: -x)
     manhattan_sim = predict_two_sentence(description, keys)[0]
     return manhattan_sim
 
 
-def get_most_important_attribute(node: et.Element):
-    if node.get('text') != '':
-        return [node.get('text')]
-    if node.get('content-desc') != '':
-        return [node.get('content-desc')]
-    # resource-id="com.android.systemui:id/navigation_bar_frame"
-    if node.get('resource-id') != '':
-        return [resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_', ' ')]
-    return [PLACE_HOLDER]
+def get_most_important_attribute(node: dict):
+    for attribute in KEY_ATTRIBUTES:
+        if safe_check_key(node, attribute):
+            if attribute != 'resource-id':
+                return {attribute: node[attribute]}
+            else:
+                return {attribute: process_resource_id(node['resource-id'])}
+    return {}
 
 
-def get_node_attribute_values(node: et.Element):
-    text = node.get('text')
-    content_desc = node.get('content-desc')
-    if node.get('resource-id') != '':
+def get_node_attribute_values(node: dict):
+    text = node['text']
+    content_desc = node['content-desc']
+    if node['resource-id'] != '':
         if resource_id_pattern.match(node.get('resource-id')) is None:
             resource_id = ''
         else:
-            resource_id = resource_id_pattern.match(node.get('resource-id')).group(1).replace('/', ' ').replace('_',
-                                                                                                                ' ')
+            resource_id = process_resource_id(node['resource-id'])
     else:
         resource_id = ''
-    result = [text, content_desc, resource_id]
-    result = list(filter(lambda x: len(x) != 0, result))
-    for i in range(len(result)):
-        if 'fab' in result[i]:
-            result[i] = result[i].replace('fab', '')
-    if len(result) == 0:
-        result.append(PLACE_HOLDER)
+    result = {'text': text, 'content-desc': content_desc, 'resource-id': resource_id}
+    result = {k: v for k, v in result.items() if len(v) != 0}
     return result
 
 
@@ -78,19 +88,17 @@ def get_attribute_base_on_class(node: dict):
     if node['resource-id'] is None or resource_id_pattern.match(node['resource-id']) is None:
         resource_id = ''
     else:
-        resource_id = resource_id_pattern.match(node['resource-id']).group(1).replace('/', ' ').replace('_',
-                                                                                                        ' ')
+        resource_id = process_resource_id(node['resource-id'])
     if 'text' in clazz:
-        candidate = [text, content_desc, resource_id]
+        candidate = {'text': text, 'content-desc': content_desc, 'resource-id': resource_id}
     elif 'image' in clazz:
-        candidate = [content_desc, resource_id]
+        candidate = {'content-desc': content_desc, 'resource-id': resource_id}
     elif 'button' in clazz:
-        candidate = [text, content_desc, resource_id]
+        candidate = {'text': text, 'content-desc': content_desc, 'resource-id': resource_id}
     else:
-        candidate = [text, content_desc, resource_id]
-    candidate = list(filter(lambda x: x != '' and x is not None, candidate))
-    if len(candidate) == 0:
-        candidate.append(PLACE_HOLDER)
+        candidate = {'text': text, 'content-desc': content_desc, 'resource-id': resource_id}
+    # candidate = list(filter(lambda x: x != '' and x is not None, candidate))
+    candidate = {k: v for k, v in candidate.items() if len(v) != 0}
     return candidate
 
 
@@ -103,21 +111,20 @@ def get_selector_from_dynamic_edge(criteria):
     return selectors
 
 
-def postprocess_keys(keys):
-    result = []
-    for key in keys:
-        key = str(key)
-        key = key.translate({
+def postprocess_keys(candidate: dict):
+    for key in candidate:
+        value = str(candidate[key])
+        value = value.translate({
             ord(' '): '_',
             ord('-'): '_'
         })
-        words = key.split('_')
-        key = []
+        words = value.split('_')
+        value = []
         for word in words:
             if word not in IRRELEVANT_WORDS:
-                key.append(word)
-        result.append(' '.join(key))
-    return result
+                value.append(word)
+        candidate[key] = ' '.join(value)
+    return candidate
 
 
 SELECT_MOST_DIRECT = 'most_direct'
@@ -139,11 +146,119 @@ calculate_function = {
 predict_function = {
     SBERT: predict_use_sbert,
     BERT: predict_use_bert
+
 }
+
+direction = [
+    'top', 'bottom', 'upper', 'left', 'right'
+]
+
+location_words = direction + ['corner']
+
+relative = [
+    'under', 'above', 'below',
+]
+
+absolute = [
+    'at', 'on', 'in'
+]
+
+
+class LocationType(Enum):
+    NULL_LOCATION = 0
+    ABSOLUTE = 1
+    RELATIVE = 2
+
+
+class GridLocation(Enum):
+    TOP_LEFT = 0
+    TOP_CENTER = 1
+    TOP_RIGHT = 2
+    LEFT = 3
+    CENTER = 4
+    RIGHT = 5
+    BOTTOM_LEFT = 6
+    BOTTOM_CENTER = 7
+    BOTTOM_RIGHT = 8
+
+
+class Location:
+    up = ['up', 'upper', 'top']
+
+    left = ['left']
+
+    right = ['right']
+
+    down = ['bottom', 'under']
+
+    center = ['center', 'near', 'in']
+
+    map_ = {
+        **{u: 1 for u in up},
+        **{l: -1 for l in left},
+        **{r: 1 for r in right},
+        **{d: 7 for d in down},
+        **{c: 4 for c in center}
+    }
+
+    def __init__(self, location_type, info):
+        self.location_type = location_type
+        self.info = info
+        self.grid = None
+        self.relative = None
+        self.neighbor = None
+        self.analysis()
+
+    def analysis(self):
+        self.grid = 0
+        if self.location_type == LocationType.NULL_LOCATION:
+            self.info = 'None location info'
+        if self.location_type == LocationType.RELATIVE:
+            self.info = nltk.word_tokenize(self.info)
+            location = []
+            for w in relative + direction:
+                if w in self.info:
+                    location.append(w)
+                    self.info.remove(w)
+            self.info = [word for word in self.info if word not in stopwords.words('english')]
+            self.neighbor = ' '.join(self.info)
+            for i in location:
+                for key in Location.map_:
+                    if i == key:
+                        self.grid += Location.map_[key]
+            self.relative = self.grid
+        if self.location_type == LocationType.ABSOLUTE:
+            location = nltk.word_tokenize(self.info)
+            location = [word for word in location if word not in stopwords.words('english')]
+            if 'corner' in location:
+                location.remove('corner')
+            for i in location:
+                for key in Location.map_:
+                    if i == key:
+                        self.grid += Location.map_[key]
+            self.grid = GridLocation(self.grid)
+            self.info = ' '.join(location)
+
+    def calculate_grid(self):
+        pass
+
+    def grid_index(self):
+        if self.location_type == LocationType.ABSOLUTE:
+            return self.grid.value
+        if self.location_type == LocationType.RELATIVE:
+            return self.grid + 10
+
+    def __str__(self):
+        if self.location_type == LocationType.NULL_LOCATION:
+            return 'None Location Info'
+        if self.location_type == LocationType.ABSOLUTE:
+            return self.info + ' ' + self.grid.__str__()
+        if self.location_type == LocationType.RELATIVE:
+            return str(self.relative) + ' ' + self.neighbor
 
 
 class Confidence:
-    def __init__(self, select_strategy=SELECT_BASED_CLASS,
+    def __init__(self, select_strategy=SELECT_MOST_DIRECT,
                  calculate_strategy=CALCULATE_AVERAGE,
                  predict_model=SBERT):
         self.select_strategy = select_strategy
@@ -156,8 +271,7 @@ class Confidence:
         # spacy can't recognize tap as VERB
         if description.startswith('tap'):
             return ['tap'], [description[description.index('tap') + 4:]]
-        nlp = spacy.load('en_core_web_sm')
-        doc = nlp(description)
+        doc = quick_nlp(description)
         actions = []
         for token in doc:
             if token.pos_ == 'VERB':
@@ -177,60 +291,181 @@ class Confidence:
         actions = list(map(lambda x: x.text, actions))
         return actions, ui_infos
 
+    @staticmethod
+    def recognize_location_type(words):
+        location_type = LocationType.NULL_LOCATION
+        for i in relative:
+            if i in words:
+                location_type = LocationType.RELATIVE
+                return location_type
+        for i in absolute:
+            if i in words:
+                if 'of' in words:
+                    location_type = LocationType.RELATIVE
+                else:
+                    for j in location_words:
+                        if j in words:
+                            location_type = LocationType.ABSOLUTE
+                    return location_type
+        return location_type
+
+    @staticmethod
+    def event_and_positive_analysis(words):
+        doc = precise_nlp(' '.join(words))
+        action_word = []
+        location_word = []
+        for i in range(len(doc)):
+            if doc[i].pos_ == 'VERB':
+                action_word.append(i)
+            if doc[i].pos_ == 'ADP':
+                location_word.append(i)
+        if len(action_word) == 0:
+            if 'tap' in words:
+                action_word = [words.index('tap')]
+        action_index = action_word[0]
+        if len(location_word) > 1:
+            for index in location_word:
+                if abs(action_index - index) <= 2:
+                    location_word.remove(index)
+        location_index = location_word[0]
+        if action_index < location_index:
+            location = doc[location_index:]
+            event = doc[:location_index]
+        else:
+            location = doc[:action_index]
+            event = doc[action_index:]
+        return event.text, location.text
+
+    @staticmethod
+    def analysis_description(sentence):
+        words = nltk.word_tokenize(sentence)
+        flag = False
+        if 'back' in words and words[words.index('back') + 1] == 'up':
+            words[words.index('back')] = 'backup'
+            words.pop(words.index('backup') + 1)
+            flag = True
+        location_type = Confidence.recognize_location_type(words)
+        location = None
+        if location_type != LocationType.NULL_LOCATION:
+            try:
+                event, location = Confidence.event_and_positive_analysis(words)
+            except BaseException:
+                return None, None
+            event = nltk.word_tokenize(event)
+        else:
+            event = words
+        # event = stopwords.words('english')
+        event = list(filter(lambda x: x == 'more' or x not in stopwords.words('english'), event))
+        if flag:
+            index = event.index('backup')
+            event.insert(index + 1, 'up')
+            event[index] = 'back'
+        action = event[0]
+        ui_info = ' '.join(event[1:])
+        location = Location(location_type, location)
+        # print((action, ui_info, location.__str__()))
+        return action, ui_info, location
+
     def confidence_with_gui(self, root: et.Element, description):
         # for node in root.iter():
         pass
 
-    def confidence_with_node(self, node: et.Element, description):
+    def confidence_with_node(self, node: et.Element, description, use_position):
         dic = node.attrib
-        confidence = self.confidence_with_selector(dic, description).confidence
+        confidence = self.confidence_with_selector(dic, description, use_position).confidence
         return NodeWithConfidence(node=node, confidence=confidence)
 
-    def confidence_with_widget(self, widget: Widget, description):
+    def confidence_with_widget(self, widget: Widget, description, use_position):
         selector = widget.to_selector()
         selector['class'] = widget.get_class()
-        confidence = self.confidence_with_selector(selector, description).confidence
+        confidence = self.confidence_with_selector(selector, description, use_position).confidence
         return NodeWithConfidence(node=widget, confidence=confidence)
 
-    def confidence_with_selector(self, dic: dict, description):
+    def confidence_with_selector(self, dic: dict, description, use_position=False):
         assert 'resource-id' in dic
         assert 'content-desc' in dic
         assert 'text' in dic
         assert 'class' in dic
-        confidence = self.__confidence(dic, description)
+        if use_position:
+            assert 'bounds' in dic
+        confidence = self.__new_confidence(dic, description, use_position)
         return NodeWithConfidence(node=dic, confidence=confidence)
 
-    def __confidence(self, node: dict, description):
-        actions, ui_infos = self.pos_analysis(description)
-        keys = self.select_attribute(node)
-        keys = postprocess_keys(keys)
+    def calculate_semantic_similarity(self, action, ui, attributes):
+        if len(attributes) == 0:
+            return -1
+        attributes = postprocess_keys(attributes)
         result = []
-        for key in keys:
-            if key == PLACE_HOLDER:
-                continue
-            key_actions, key_ui_infos = self.pos_analysis(key)
-            sims = []
-            for key_action in key_actions:
-                for action in actions:
-                    sims.append(self.predict(key_action, action))
-            for key_info in key_ui_infos:
-                if key_info == '':
-                    continue
-                for info in ui_infos:
-                    if info == '':
-                        continue
-                    sims.append(self.predict(key_info, info))
-            # select most similar part with description
-            if len(sims) != 0:
-                result.append(np.max(sims))
+        for k in attributes:
+            v = attributes[k]
+            attr_actions, attr_uis = self.pos_analysis(v)
+            scores = []
+            for attr_action in attr_actions:
+                scores.append(self.predict(attr_action, action))
+            for attr_ui in attr_uis:
+                scores.append(self.predict(attr_ui, ui))
+            if len(scores) != 0:
+                result.append(np.max(scores))
         if len(result) == 0:
             score = 0
         else:
             score = np.average(result)
         return score
-        # score = np.average(result)
-        # return np.average(result)
-        # return NodeWithConfidence(node=node, confidence=np.average(result))
+
+    def __new_confidence(self, node: dict, description, using_position):
+        action, ui, location = self.analysis_description(description)
+        attributes = self.select_attribute(node)
+        semantic_similarity = self.calculate_semantic_similarity(action, ui, attributes)
+        if not using_position:
+            return semantic_similarity
+        else:
+            if semantic_similarity == -1:
+                return -1
+            x = [location.location_type.value]
+            if location.location_type == LocationType.NULL_LOCATION:
+                return semantic_similarity
+            if location.location_type == LocationType.ABSOLUTE:
+                x.append(location.grid.value)
+                # x.extend(node['bounds'])
+                bounds = bounds2list(node['bounds'])
+                x.extend(bounds[0])
+                x.extend(bounds[1])
+                x.extend([0, 0, 1080, 1920])
+            if location.location_type == LocationType.RELATIVE:
+                x.append(location.grid)
+                pass
+            x.append(semantic_similarity)
+            result = decision_model.predict([x])
+            return result
+
+    def __confidence(self, node: dict, description, using_position):
+        actions, ui_infos = self.pos_analysis(description)
+        attributes = self.select_attribute(node)
+        if len(attributes) == 0:
+            return -1
+        attributes = postprocess_keys(attributes)
+        result = []
+        for k in attributes:
+            v = attributes[k]
+            attr_actions, attr_ui_infos = self.pos_analysis(v)
+            scores = []
+            for attr_action in attr_actions:
+                for action in actions:
+                    scores.append(self.predict(attr_action, action))
+            for attr_ui_info in attr_ui_infos:
+                if attr_ui_info == '':
+                    continue
+                for ui_info in ui_infos:
+                    if ui_info == '':
+                        continue
+                    scores.append(self.predict(attr_ui_info, ui_info))
+            if len(scores) != 0:
+                result.append(np.max(scores))
+        if len(result) == 0:
+            score = 0
+        else:
+            score = np.average(result)
+        return score
 
     def select_attribute(self, node):
         return select_function[self.select_strategy](node)
