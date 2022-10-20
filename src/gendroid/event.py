@@ -1,4 +1,5 @@
 from collections import namedtuple
+from gendroid.utils import calculation_position
 
 EventData = namedtuple('EventData', ['action', 'selector', 'data'])
 CLICK_EVENT = 'click'
@@ -60,14 +61,6 @@ def scroll_based_direction(device, event):
     device.u.sleep(2)
 
 
-def calculation_position(position):
-    top_left = position[0]
-    down_right = position[1]
-    x = top_left[0] + (down_right[0] - top_left[0]) / 2
-    y = top_left[1] + (down_right[1] - top_left[1]) / 2
-    return x, y
-
-
 def click_using_position(device, event):
     position = event.position
     x, y = calculation_position(position)
@@ -105,6 +98,8 @@ class Event:
         self.action = action
         self.selector = None
         self.confidence = -1
+        self.position = None
+        self.direction = None
         for i in kwargs:
             self.__setattr__(i, kwargs[i])
 
