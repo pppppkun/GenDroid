@@ -1,8 +1,9 @@
 import os
 import logging
 import traceback
-
+import argparse
 from gendroid.event import VirtualEvent
+from gendroid.executor import ExecutorMode
 from threading import Timer
 
 api_log = logging.getLogger('api')
@@ -12,6 +13,18 @@ api_log_ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 api_log_ch.setFormatter(formatter)
 api_log.addHandler(api_log_ch)
+
+parser = argparse.ArgumentParser(description='api')
+parser.add_argument('--output', dest='output', type=str, default='demo')
+parser.add_argument('--mode', dest='mode', type=str, help='Specify the mode of executor\n\t dynamic, static, hybrid',
+                    default='dynamic')
+parser.add_argument('--position', dest='use_position', action='store_true',
+                    help='Specify whether use position in description', default=True)
+
+
+# parser.add_argument('-test_record', '-tr', dest='test_record', type=str, help='point a test record')
+# parser.add_argument('-repair_strategy', '-rs', dest='repair_strategy', type=str, help='Specify a repair policy')
+# parser.add_argument('-verbose', dest='verbose', action='store_true', help='start detailed output')
 
 
 def set_app(apk_folder, app_name):
@@ -52,6 +65,7 @@ def set_app(apk_folder, app_name):
 class Tester:
     def __init__(self, apk_folder, app_name, timeout=60 * 30, have_install=False, is_debug=False):
         self.timer = None
+        self.args = parser.parse_args()
         set_app(apk_folder, app_name)
         from gendroid.device import Device
         from gendroid.executor import Executor
@@ -59,21 +73,18 @@ class Tester:
         from gendroid.analyst import Analyst
         from gendroid.FSM import FSM
         from gendroid.construct import Constructor
-        while True:
-            try:
-                from gendroid.confidence import Confidence
-                break
-            except:
-                pass
+        from gendroid.confidence import Confidence
+
         self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
         self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph, have_install)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
                              atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
         self.__confidence = Confidence()
         self.__analyst = Analyst(device=self.__device, graph=self.__graph, data_base=self.__db,
-                                 confidence=self.__confidence)
+                                 confidence=self.__confidence, use_position=self.args.use_position)
         self.__constructor = Constructor(db=self.__db)
-        self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor)
+        self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor,
+                                   mode=ExecutorMode[self.args.mode.upper()])
         self.__descriptions = []
         self.__timeout = timeout
         self.__is_debug = is_debug
@@ -90,8 +101,9 @@ class Tester:
 
     def construct(self, file_name=None):
         try:
-            # self.timer = Timer(self.__timeout, self.stop, args=(file_name,))
-            # self.timer.start()
+            if not os.path.exists(self.args.output):
+                os.mkdir(self.args.output)
+            file_name = os.path.join(self.args.output, file_name)
             if not self.__is_debug:
                 logging.basicConfig(filename=file_name + '.log',
                                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -103,10 +115,6 @@ class Tester:
             traceback.print_exc()
             api_log.info('nice to meet bug')
         api_log.info('to script')
-        # if self.timer.is_alive():
-        #     self.timer.cancel()
-        if os.path.exists(file_name):
-            file_name = 'I' + file_name
         self.__executor.to_scripts(file_name)
         return self
 
