@@ -1,6 +1,7 @@
 from gendroid.analyst import Analyst
 from gendroid.construct import Constructor
 from gendroid.device import Device
+from enum import Enum
 import logging
 
 executor_log = logging.getLogger('executor')
@@ -14,12 +15,19 @@ executor_log.addHandler(executor_log_ch)
 PLACE_HOLDER = ''
 
 
+class ExecutorMode(Enum):
+    STATIC = 0
+    DYNAMIC = 1
+    HYBRID = 2
+
+
 class Executor:
-    def __init__(self, analyst: Analyst, constructor: Constructor, device: Device):
+    def __init__(self, analyst: Analyst, constructor: Constructor, device: Device, mode=ExecutorMode.HYBRID):
         self.analyst = analyst
         self.constructor = constructor
         self.device = device
         self.descriptions = None
+        self.mode = mode
         pass
 
     # 1. get widget dynamic and static.
@@ -29,7 +37,7 @@ class Executor:
     # widgets = get_all_widgets()
     # calculated similarity between <widgets source>, <widgets destination>
     def execute(self, ves):
-        self.descriptions = list(map(lambda x : x.description, ves))
+        self.descriptions = list(map(lambda x: x.description, ves))
         for i in range(len(ves) - 1):
             src_des = ves[i].description
             tgt_des = ves[i + 1].description
@@ -43,6 +51,8 @@ class Executor:
                 src_event = self.constructor.generate_events_from_widget(widget=src_widget, action=None,
                                                                          data=ves[i].data)
                 self.device.execute(src_event)
+            if self.mode == ExecutorMode.DYNAMIC:
+                continue
             tgt_widgets = self.analyst.static_match_activity(tgt_des)
             found_path = False
             i = 0
@@ -96,10 +106,15 @@ d.app_start('{}')
 """
 d.sleep(3)
 if 'com.google.android.inputmethod.latin:id/key_pos' in d.dump_hierarchy():
-   d.press(key='back')
+    d.press(key='back')
 """
         # from yapf.yapflib.yapf_api import FormatCode
         # scripts, _ = FormatCode(scripts)
         file_name = file_name if file_name is not None else 'test_script.py'
         f = open(file_name, 'w')
         f.write(scripts)
+
+
+if __name__ == '__main__':
+    # print(ExecutorMode['DYNAMIC'] == ExecutorMode.DYNAMIC)
+    print(ExecutorMode(1))
