@@ -53,7 +53,7 @@ def filter_by_content(node: et.Element):
 
 
 class Analyst:
-    def __init__(self, device: Device, graph: FSM, data_base: DataBase, confidence):
+    def __init__(self, device: Device, graph: FSM, data_base: DataBase, confidence, use_position):
         self.confidence = confidence
         self.device = device
         self.graph = graph
@@ -61,6 +61,7 @@ class Analyst:
         self.constructor = Constructor(self.db)
         self.path_count_threshold = 5
         self.mode = ''
+        self.use_position = use_position
 
     def try_back_without_restart(self, events, state):
         analyst_log.info('try back to checkpoint without restart')
@@ -297,7 +298,7 @@ class Analyst:
             lambda _node: filter_by_content(_node)
         ).append(
             map,
-            lambda x: self.confidence.confidence_with_node(x, description)
+            lambda x: self.confidence.confidence_with_node(x, description, self.use_position)
         ).append(
             sorted,
             lambda x: -x.confidence
@@ -322,7 +323,7 @@ class Analyst:
         count = len(widgets)
         node_with_confidences = []
         for index, widget in enumerate(widgets):
-            n_w_c = self.confidence.confidence_with_selector(widget, description)
+            n_w_c = self.confidence.confidence_with_selector(widget, description, self.use_position)
             node_with_confidences.append(n_w_c)
 
             if index % 20 == 0:
