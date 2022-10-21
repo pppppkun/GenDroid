@@ -360,6 +360,13 @@ class Confidence:
             index = event.index('backup')
             event.insert(index + 1, 'up')
             event[index] = 'back'
+        if '@' in event:
+            index = event.index('@')
+            pre = event[index - 1]
+            post = event[index + 1]
+            event[index - 1] = pre + '@' + post
+            event.pop(index)
+            event.pop(index)
         action = event[0]
         ui_info = ' '.join(event[1:])
         location = Location(location_type, location)
