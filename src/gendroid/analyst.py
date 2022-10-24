@@ -44,8 +44,9 @@ def filter_by_class(node: et.Element):
 
 def filter_by_content(node: et.Element):
     notification = 'Android System notification:'
+    ATX = 'ATX notification: UIAutomator service started'
     rid = 'com.android.systemui:id'
-    if notification in node.get('content-desc'):
+    if notification in node.get('content-desc') or ATX in node.get('content-desc'):
         return False
     if rid in node.get('resource-id'):
         return False
@@ -171,7 +172,7 @@ class Analyst:
 
         candidate_edit_text = sorted(
             map(
-                lambda x: [x, self.confidence.confidence_with_node(x, description)],
+                lambda x: [x, self.confidence.confidence_with_node(x, description, self.use_position)],
                 candidate_edit_text
             ),
             key=lambda x: -x[1].confidence
@@ -217,7 +218,7 @@ class Analyst:
         last_event = self.device.history[-1]
         if last_event.selector:
             cluster = list(filter(lambda x: x.get('resource-id') != last_event.selector['resource-id'], cluster))
-        scores = list(map(lambda x: self.confidence.confidence_with_node(x, description).confidence, cluster))
+        scores = list(map(lambda x: self.confidence.confidence_with_node(x, description, self.use_position).confidence, cluster))
         return cluster, scores
 
     def valid_path(self, path, description, w_target: dict):
@@ -259,7 +260,7 @@ class Analyst:
                     analyst_log.info(
                         f'check {len(events)}-th event with action={action} rid={last_widget["resource-id"]}')
                     scores.append(
-                        self.confidence.confidence_with_selector(last_widget, description).confidence)
+                        self.confidence.confidence_with_selector(last_widget, description, self.use_position).confidence)
                     events.append(event)
                     self.device.execute(event, is_add_edge=False)
 
@@ -296,15 +297,20 @@ class Analyst:
         ).append(
             filter,
             lambda _node: filter_by_content(_node)
-        ).append(
-            map,
-            lambda x: self.confidence.confidence_with_node(x, description, self.use_position)
-        ).append(
-            sorted,
-            lambda x: -x.confidence
         )
+        nodes = f.do()
+        self.confidence.cache_widget(nodes)
+        queue = map(lambda x: self.confidence.confidence_with_node(x, description, self.use_position), nodes)
+        queue = sorted(queue, key=lambda x: -x.confidence)
+        # ).append(
+        #     map,
+        #     lambda x: self.confidence.confidence_with_node(x, description, self.use_position)
+        # ).append(
+        #     sorted,
+        #     lambda x: -x.confidence
+        # )
         # return f.do()
-        queue = f.do()
+        # queue = f.do()
         widget = Widget(queue[0].node.attrib)
         return widget
 
@@ -323,7 +329,7 @@ class Analyst:
         count = len(widgets)
         node_with_confidences = []
         for index, widget in enumerate(widgets):
-            n_w_c = self.confidence.confidence_with_selector(widget, description, self.use_position)
+            n_w_c = self.confidence.confidence_with_selector(widget, description, False)
             node_with_confidences.append(n_w_c)
 
             if index % 20 == 0:
