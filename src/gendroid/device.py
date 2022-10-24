@@ -129,6 +129,7 @@ class Device:
         n_w['resource-id'] = widget['resourceName']
         n_w['text'] = "" if widget['text'] is None else widget['text']
         n_w['activity'] = self.activity()
+        n_w['bounds'] = widget['bounds']
         return n_w
 
     def exists_widget(self, selector: dict):
