@@ -31,6 +31,11 @@ KEY_ATTRIBUTES = [
     'resource-id',
 ]
 
+NORMAL_ACTION = [
+    'click', 'tap', 'open', 'select'
+    # 'click', 'open'
+]
+
 PLACE_HOLDER = '@'
 
 resource_id_pattern = re.compile(r'.*:id/(.*)')
@@ -39,8 +44,12 @@ model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/s
 decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/rf.joblib')
 
 
-def process_resource_id(x): return resource_id_pattern.match(x).group(1).replace('/', ' ').replace('_',
-                                                                                                   ' ')
+def process_resource_id(x):
+    r = resource_id_pattern.match(x)
+    if r:
+        return r.group(1).replace('/', ' ').replace('_', ' ')
+    else:
+        return x
 
 
 def predict_use_sbert(description, keys):
@@ -168,6 +177,7 @@ class LocationType(Enum):
     NULL_LOCATION = 0
     ABSOLUTE = 1
     RELATIVE = 2
+    UNRECOGNIZED = 3
 
 
 class GridLocation(Enum):
@@ -264,14 +274,53 @@ class Confidence:
         self.select_strategy = select_strategy
         self.calculate_strategy = calculate_strategy
         self.predict_model = predict_model
+        self.cache = []
         pass
 
     @staticmethod
-    def pos_analysis(description):
+    def event_and_location_analysis(words):
+        doc = precise_nlp(' '.join(words))
+        action_word = []
+        location_word = []
+        for i in range(len(doc)):
+            if doc[i].pos_ == 'VERB':
+                action_word.append(i)
+            if doc[i].pos_ == 'ADP':
+                location_word.append(i)
+        if len(action_word) == 0:
+            for a in NORMAL_ACTION:
+                if a in words:
+                    action_word = [words.index(a)]
+                    break
+            # if 'tap' in words:
+            #     action_word = [words.index('tap')]
+        assert len(action_word) != 0
+        # if len(action_word) == 0:
+        #     action_word.append(0)
+        #     print(words)
+        action_index = action_word[0]
+        if len(location_word) > 0:
+            for index in location_word:
+                if abs(action_index - index) == 1:
+                    location_word.remove(index)
+        if len(location_word) == 0:
+            return words, None
+        else:
+            location_index = location_word[0]
+            if action_index < location_index:
+                location = doc[location_index:]
+                event = doc[:location_index]
+            else:
+                location = doc[:action_index]
+                event = doc[action_index:]
+            return event.text, location.text
+
+    @staticmethod
+    def pos_analysis(description, nlp=quick_nlp):
         # spacy can't recognize tap as VERB
         if description.startswith('tap'):
             return ['tap'], [description[description.index('tap') + 4:]]
-        doc = quick_nlp(description)
+        doc = nlp(description)
         actions = []
         for token in doc:
             if token.pos_ == 'VERB':
@@ -293,7 +342,12 @@ class Confidence:
 
     @staticmethod
     def recognize_location_type(words):
+        # if location_type == LocationType.NULL_LOCATION:
         location_type = LocationType.NULL_LOCATION
+        # doc = precise_nlp(' '.join(words))
+        # for i in range(len(doc)):
+        #     if doc[i].pos_ == 'ADP' and doc[max(i-1, 0)].pos_ != 'VERB':
+        #         location_type = LocationType.UNRECOGNIZED
         for i in relative:
             if i in words:
                 location_type = LocationType.RELATIVE
@@ -310,31 +364,17 @@ class Confidence:
         return location_type
 
     @staticmethod
-    def event_and_positive_analysis(words):
-        doc = precise_nlp(' '.join(words))
-        action_word = []
-        location_word = []
-        for i in range(len(doc)):
-            if doc[i].pos_ == 'VERB':
-                action_word.append(i)
-            if doc[i].pos_ == 'ADP':
-                location_word.append(i)
-        if len(action_word) == 0:
-            if 'tap' in words:
-                action_word = [words.index('tap')]
-        action_index = action_word[0]
-        if len(location_word) > 1:
-            for index in location_word:
-                if abs(action_index - index) <= 2:
-                    location_word.remove(index)
-        location_index = location_word[0]
-        if action_index < location_index:
-            location = doc[location_index:]
-            event = doc[:location_index]
-        else:
-            location = doc[:action_index]
-            event = doc[action_index:]
-        return event.text, location.text
+    def remove_meaningless_word(words):
+        special_stopwords = direction + location_words + relative + absolute
+        special_stopwords.append('the')
+        special_stopwords.append('button')
+        if type(words) == str:
+            words = words.split(' ')
+        words = list(filter(lambda x: x not in special_stopwords, words))
+        # words = list(filter(lambda x: x == 'more' or x not in special_stopwords.words('english'), words))
+        # if 'button' in words:
+        #     words.remove('button')
+        return words
 
     @staticmethod
     def analysis_description(sentence):
@@ -344,18 +384,23 @@ class Confidence:
             words[words.index('back')] = 'backup'
             words.pop(words.index('backup') + 1)
             flag = True
+        # 1. divide into (event, location)
+        # event, location = Confidence.event_and_location_analysis(words)
+        # if location is not None:
+        #     location_type = Confidence.recognize_location_type(location.split(' '))
+        #     event = nltk.word_tokenize(event)
+        # else:
+        #     location_type = LocationType.NULL_LOCATION
         location_type = Confidence.recognize_location_type(words)
         location = None
         if location_type != LocationType.NULL_LOCATION:
-            try:
-                event, location = Confidence.event_and_positive_analysis(words)
-            except BaseException:
-                return None, None
-            event = nltk.word_tokenize(event)
+            event, location = Confidence.event_and_location_analysis(words)
+            if location is None:
+                location_type = LocationType.NULL_LOCATION
+            else:
+                event = nltk.word_tokenize(event)
         else:
             event = words
-        # event = stopwords.words('english')
-        event = list(filter(lambda x: x == 'more' or x not in stopwords.words('english'), event))
         if flag:
             index = event.index('backup')
             event.insert(index + 1, 'up')
@@ -367,11 +412,23 @@ class Confidence:
             event[index - 1] = pre + '@' + post
             event.pop(index)
             event.pop(index)
+        # action_with_ui = ' '.join(event)
+        # actions, uis = Confidence.pos_analysis(action_with_ui, precise_nlp)
+        # if len(actions) != 0 and len(uis) != 0:
+        #     action, ui = actions[0], uis[0]
+        # else:
+        #     action, ui = event[0], event[1:]
+        # action, ui = Confidence.remove_meaningless_word(action), Confidence.remove_meaningless_word(ui)
+        # event = list(filter(lambda x: x == 'more' or x not in stopwords.words('english'), event))
+        if 'do' in event and event[event.index('do') + 1] == 'n\'t':
+            event[event.index('do')] = 'don\'t'
+            event.pop(event.index('don\'t') + 1)
+        event = Confidence.remove_meaningless_word(event)
         action = event[0]
-        ui_info = ' '.join(event[1:])
+        ui = ' '.join(event[1:])
         location = Location(location_type, location)
         # print((action, ui_info, location.__str__()))
-        return action, ui_info, location
+        return action, ui, location
 
     def confidence_with_gui(self, root: et.Element, description):
         # for node in root.iter():
@@ -407,8 +464,9 @@ class Confidence:
             v = attributes[k]
             attr_actions, attr_uis = self.pos_analysis(v)
             scores = []
-            for attr_action in attr_actions:
-                scores.append(self.predict(attr_action, action))
+            if action not in NORMAL_ACTION:
+                for attr_action in attr_actions:
+                    scores.append(self.predict(attr_action, action))
             for attr_ui in attr_uis:
                 scores.append(self.predict(attr_ui, ui))
             if len(scores) != 0:
@@ -422,6 +480,7 @@ class Confidence:
     def __new_confidence(self, node: dict, description, using_position):
         action, ui, location = self.analysis_description(description)
         attributes = self.select_attribute(node)
+        # print(attributes)
         semantic_similarity = self.calculate_semantic_similarity(action, ui, attributes)
         if not using_position:
             return semantic_similarity
@@ -433,19 +492,22 @@ class Confidence:
                 return semantic_similarity
             if location.location_type == LocationType.ABSOLUTE:
                 x.append(location.grid.value)
-                # x.extend(node['bounds'])
                 bounds = bounds2list(node['bounds'])
-                x.extend(bounds[0])
-                x.extend(bounds[1])
+                x.extend(bounds)
                 x.extend([0, 0, 1080, 1920])
             if location.location_type == LocationType.RELATIVE:
-                x.append(location.grid)
-                pass
-            x.append(semantic_similarity)
+                x.append(location.relative)
+                widget = self.select_relative_widget(location.neighbor)
+                bounds = bounds2list(node['bounds'])
+                x.extend(bounds)
+                relative_bounds = bounds2list(widget['bounds'])
+                x.extend(relative_bounds)
+            x.append(round(semantic_similarity, 2))
             result = decision_model.predict([x])
+            # result = max(semantic_similarity, result)
             return result
 
-    def __confidence(self, node: dict, description, using_position):
+    def __confidence(self, node: dict, description):
         actions, ui_infos = self.pos_analysis(description)
         attributes = self.select_attribute(node)
         if len(attributes) == 0:
@@ -473,6 +535,16 @@ class Confidence:
         else:
             score = np.average(result)
         return score
+
+    def cache_widget(self, gui):
+        self.cache = gui
+
+    def select_relative_widget(self, description):
+        result = []
+        for node in self.cache:
+            result.append([node, self.__confidence(node.attrib, description)])
+        result = sorted(result, key=lambda x: -x[1])
+        return result[0][0].attrib
 
     def select_attribute(self, node):
         return select_function[self.select_strategy](node)
