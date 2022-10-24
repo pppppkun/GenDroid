@@ -132,8 +132,14 @@ def calculation_position(position):
     y = top_left[1] + (down_right[1] - top_left[1]) / 2
     return x, y
 
+
 def bounds2list(bounds):
-    s = bounds
-    s = '[' + s + ']'
-    s = s[:s.find(']') + 1] + ',' + s[s.find(']') + 1:]
-    return eval(s)
+    if type(bounds) == str:
+        s = bounds
+        s = '[' + s + ']'
+        s = s[:s.find(']') + 1] + ',' + s[s.find(']') + 1:]
+        s = eval(s)
+        s = s[0] + s[1]
+    if type(bounds) == dict:
+        s = [bounds['left'], bounds['top'], bounds['right'], bounds['bottom']]
+    return s
