@@ -98,7 +98,7 @@ class Executor:
 import uiautomator2 as u2
 d = u2.connect()
 d.app_stop('{}')
-d.app_start('{}')
+d.app_start('{}', use_monkey=True)
 # {}
 """.format(self.device.package, self.device.package, '.'.join(self.descriptions))
         for event in self.device.history:
