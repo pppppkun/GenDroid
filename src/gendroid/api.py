@@ -20,6 +20,7 @@ parser.add_argument('--mode', dest='mode', type=str, help='Specify the mode of e
                     default='dynamic')
 parser.add_argument('--position', dest='use_position', action='store_true',
                     help='Specify whether use position in description', default=True)
+parser.add_argument('--no-position', dest='use_position', action='store_false')
 
 
 # parser.add_argument('-test_record', '-tr', dest='test_record', type=str, help='point a test record')
@@ -66,6 +67,7 @@ class Tester:
     def __init__(self, apk_folder, app_name, timeout=60 * 30, have_install=False, is_debug=False):
         self.timer = None
         self.args = parser.parse_args()
+        api_log.info(self.args)
         set_app(apk_folder, app_name)
         from gendroid.device import Device
         from gendroid.executor import Executor
