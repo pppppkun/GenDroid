@@ -380,7 +380,7 @@ class Confidence:
     def analysis_description(sentence):
         words = nltk.word_tokenize(sentence)
         flag = False
-        if 'back' in words and words[words.index('back') + 1] == 'up':
+        if 'back' in words and words.index('back') + 1 < len(words) and words[words.index('back') + 1] == 'up':
             words[words.index('back')] = 'backup'
             words.pop(words.index('backup') + 1)
             flag = True
@@ -469,6 +469,7 @@ class Confidence:
                     scores.append(self.predict(attr_action, action))
             for attr_ui in attr_uis:
                 scores.append(self.predict(attr_ui, ui))
+            scores.append(self.predict(ui, v))
             if len(scores) != 0:
                 result.append(np.max(scores))
         if len(result) == 0:
