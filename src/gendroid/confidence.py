@@ -41,8 +41,9 @@ PLACE_HOLDER = '@'
 resource_id_pattern = re.compile(r'.*:id/(.*)')
 NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
 model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/output_model')
-decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/rf.joblib')
-
+# model = SentenceTransformer('all-MiniLM-L6-v2')
+# decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/rf.joblib')
+decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/classifier_lack.joblib')
 
 def process_resource_id(x):
     r = resource_id_pattern.match(x)
@@ -504,7 +505,8 @@ class Confidence:
                 relative_bounds = bounds2list(widget['bounds'])
                 x.extend(relative_bounds)
             x.append(round(semantic_similarity, 2))
-            result = decision_model.predict([x])
+            # result = decision_model.predict([x])
+            result = decision_model.predict_proba([x])[0][1]
             # result = max(semantic_similarity, result)
             return result
 

@@ -31,6 +31,8 @@ class FSM:
     def import_graph(self):
         events = os.path.join(self.graph_folder, 'events')
         states = os.path.join(self.graph_folder, 'states')
+        if not os.path.exists(events) or not os.path.exists(states):
+            return
         events = [os.path.join(events, f) for f in os.listdir(events) if f.endswith('.json')]
         states = [os.path.join(states, f) for f in os.listdir(states) if f.endswith('.json')]
         for state in states:
@@ -247,6 +249,26 @@ class FSM:
                 views.append(view.attrib)
         return views
 
+    @staticmethod
+    def get_all_leaf_node(gui, package):
+        import xml.etree.ElementTree as et
+        views = []
+        root = et.fromstring(gui)
+
+        def iteration(root):
+            if len(root) != 0:
+                for child in list(root):
+                    iteration(child)
+                # iteration(list(root))
+            else:
+                if root.get('package') == package:
+                    views.append(root.attrib)
+        # for view in root.iter():
+        # if view.get('package') == package:
+        # views.append(view.attrib)
+        iteration(root)
+        return views
+
     def create_state(self, app_info):
         assert app_info['activity']
         assert app_info['gui']
@@ -257,9 +279,13 @@ class FSM:
         new_state = State(dic)
         return new_state
 
+    def get_temp_state_id(self, app_info):
+        state = self.create_state(app_info)
+        return state.id
+
     # Have tested
     def get_most_closest_state(self, app_info):
-        views = self.hierarchical_to_list(app_info['gui'], app_info['package'])
+        views = self.get_all_leaf_node(app_info['gui'], app_info['package'])
         if app_info['package'] in app_info['activity']:
             activity = app_info['activity'][:len(app_info['package'])] + '/' + \
                        app_info['activity'][len(app_info['package']):]
@@ -267,6 +293,7 @@ class FSM:
             activity = app_info['package'] + '/' + app_info['activity']
         match = -1
         candidate_state = None
+        l = []
         for state in self.states.values():
             if state.activity == activity:
                 # print(state.id)
@@ -277,7 +304,8 @@ class FSM:
                 count = 0
                 total = 0
                 for widget in views:
-                    if 'Layout' in widget.get('class'):
+                    if 'Layout' in widget.get('class') or 'Recycler' in widget.get(
+                            'class') or 'ViewGroup' in widget.get('class') or 'Image' in widget.get('class'):
                         continue
                     total += 1
                     for widget_ in views_:
@@ -294,6 +322,7 @@ class FSM:
                         if self.equal_or_both_null(rid1, rid2) and self.equal_or_both_null(text1, text2) \
                                 and self.equal_or_both_null(content1, content2):
                             count += 1
+                            l.append(widget_)
                             views_.remove(widget_)
                             break
                 if count / total > match:
@@ -312,6 +341,13 @@ class FSM:
         if not bool_a and not bool_b:
             return True
         return False
+
+    @staticmethod
+    def safe_equal(a, b):
+        bool_a = a != '' and a is not None
+        bool_b = b != '' and b is not None
+        if bool_a and bool_b:
+            return a == b
 
     # Have tested
     # resource_id don't have package information
@@ -337,7 +373,7 @@ class FSM:
                                 or (widget['text'] is not None and widget_[text] == widget['text']):
                             candidate_target_states.append(state)
                             break
-                    if widget_rid == resource_id:
+                    elif widget_rid == resource_id:
                         candidate_target_states.append(state)
                         break
         return candidate_target_states

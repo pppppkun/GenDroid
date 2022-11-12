@@ -1,5 +1,6 @@
 import os
 import logging
+import subprocess
 import traceback
 import argparse
 from gendroid.event import VirtualEvent
@@ -21,6 +22,7 @@ parser.add_argument('--mode', dest='mode', type=str, help='Specify the mode of e
 parser.add_argument('--position', dest='use_position', action='store_true',
                     help='Specify whether use position in description', default=True)
 parser.add_argument('--no-position', dest='use_position', action='store_false')
+parser.add_argument('--device', dest='device', default='emulator-5554')
 
 
 # parser.add_argument('-test_record', '-tr', dest='test_record', type=str, help='point a test record')
@@ -78,7 +80,7 @@ class Tester:
         from gendroid.confidence import Confidence
 
         self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
-        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph, have_install)
+        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph, have_install, self.args.device)
         self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
                              atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
         self.__confidence = Confidence()
@@ -145,6 +147,26 @@ def get_all_test(p):
             # command = 'python3 ' + os.path.join(p, f)
             # print(command)
             # os.system(command)
+
+
+def compare(folder1, folder2, filepaths):
+    import subprocess
+    for filepath in filepaths:
+        t1 = os.path.join(folder1, 'test_' + filepath)
+        t2 = os.path.join(folder2, 'test_' + filepath)
+        print(t1, t2)
+        subprocess.call(['diff', t1, t2])
+
+
+def run_all_test(filenames, target_folder, mode, device='emulator-5554'):
+    for filepath in filenames:
+        run_test(filepath, target_folder, mode, device)
+
+
+def run_test(filepath, target_folder, mode, device='emulator-5554'):
+    target = 'test_' + filepath
+    if not os.path.exists(os.path.join(target_folder, target)):
+        subprocess.call(["python3", filepath, '--output', target_folder, '--mode', mode, '--device', device])
 
 
 if __name__ == '__main__':

@@ -19,8 +19,8 @@ device_log.addHandler(device_log_ch)
 
 
 class Device:
-    def __init__(self, apk_path, graph: FSM, have_install=False):
-        self.u = u2.connect('emulator-5554')
+    def __init__(self, apk_path, graph: FSM, have_install=False, device='emulator-5554'):
+        self.u = u2.connect(device)
         apk_ = APK(apk_path)
         self.apk_path = apk_path
         self.graph = graph
@@ -61,6 +61,7 @@ class Device:
                         post_info,
                         e
                     )
+                    continue
                     # 1. try back
                     # 2. try to re-execute last event
                     # 3. if no error, add back edge to post_info -> back_info
@@ -96,6 +97,19 @@ class Device:
             device_log.error('can not execute event')
             traceback.print_exc()
             return self.gui(), False
+
+    def try_execute(self, e):
+        pre_info = self.app_current_with_gui()
+        pre_state = self.graph.get_temp_state_id(pre_info)
+        send_event_to_device[e.action](self, e)
+        self.interval()
+        post_info = self.app_current_with_gui()
+        post_state = self.graph.get_temp_state_id(post_info)
+        if pre_state != post_state:
+            # self.reset(len(self.history))
+            self.history.append(e)
+            return True
+        return False
 
     def select_widget(self, selector):
         translate = {
@@ -192,7 +206,7 @@ class Device:
         if events:
             for event in events:
                 send_event_to_device[event.action](self, event)
-                self.u.sleep(3)
+                self.u.sleep(5)
                 self.close_keyboard()
 
     def install_grant_runtime_permissions(self, data):
@@ -222,9 +236,13 @@ class Device:
             self.u.sleep(2)
             if ret.exit_code == 1:
                 exit(1)
-        else:
-            self.u.app_start(package_name=self.package, wait=True, use_monkey=True)
-            self.u.sleep(4)
+            return
+        if 'googlequick' in self.package:
+            self.u.app_start('com.google.android.googlequicksearchbox',
+                             activity='com.google.android.apps.gsa.searchnow.SearchNowActivity', use_monkey=True)
+            return
+        self.u.app_start(package_name=self.package, wait=True, use_monkey=True)
+        self.u.sleep(4)
 
 
 if __name__ == '__main__':

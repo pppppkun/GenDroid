@@ -44,9 +44,11 @@ def filter_by_class(node: et.Element):
 
 def filter_by_content(node: et.Element):
     notification = 'Android System notification:'
+    location_service = 'Location requests active'
     ATX = 'ATX notification: UIAutomator service started'
     rid = 'com.android.systemui:id'
-    if notification in node.get('content-desc') or ATX in node.get('content-desc'):
+    if notification in node.get('content-desc') or ATX in node.get('content-desc') or location_service in node.get(
+            'content-desc'):
         return False
     if rid in node.get('resource-id'):
         return False
@@ -98,7 +100,7 @@ class Analyst:
         now_state, match = self.graph.get_most_closest_state(self.device.app_current_with_gui())
         return now_state.id == state.id
 
-    def calculate_path_between_activity(self, description, widget):
+    def calculate_path_between_activity(self, description, widget, resort_by_confidence=True):
 
         paths = self.graph.find_path_to_target_widget(self.device, widget)
         candidate = []
@@ -130,11 +132,14 @@ class Analyst:
             analyst_log.info(f'valid {i}-th path')
             i += 1
             events, scores = self.valid_path(path, description, widget)
-            if events and scores:
+            self.device.reset(cp)
+            if scores is not None:
                 candidate.append([events, scores])
+                if not resort_by_confidence:
+                    return [events]
             # if self.try_back_without_restart(events, state):
             #     continue
-            self.device.reset(cp)
+
             if len(candidate) == 5:
                 break
 
@@ -218,7 +223,8 @@ class Analyst:
         last_event = self.device.history[-1]
         if last_event.selector:
             cluster = list(filter(lambda x: x.get('resource-id') != last_event.selector['resource-id'], cluster))
-        scores = list(map(lambda x: self.confidence.confidence_with_node(x, description, self.use_position).confidence, cluster))
+        scores = list(
+            map(lambda x: self.confidence.confidence_with_node(x, description, self.use_position).confidence, cluster))
         return cluster, scores
 
     def valid_path(self, path, description, w_target: dict):
@@ -260,7 +266,8 @@ class Analyst:
                     analyst_log.info(
                         f'check {len(events)}-th event with action={action} rid={last_widget["resource-id"]}')
                     scores.append(
-                        self.confidence.confidence_with_selector(last_widget, description, self.use_position).confidence)
+                        self.confidence.confidence_with_selector(last_widget, description,
+                                                                 self.use_position).confidence)
                     events.append(event)
                     self.device.execute(event, is_add_edge=False)
 
@@ -302,17 +309,12 @@ class Analyst:
         self.confidence.cache_widget(nodes)
         queue = map(lambda x: self.confidence.confidence_with_node(x, description, self.use_position), nodes)
         queue = sorted(queue, key=lambda x: -x.confidence)
-        # ).append(
-        #     map,
-        #     lambda x: self.confidence.confidence_with_node(x, description, self.use_position)
-        # ).append(
-        #     sorted,
-        #     lambda x: -x.confidence
-        # )
-        # return f.do()
-        # queue = f.do()
-        widget = Widget(queue[0].node.attrib)
-        return widget
+        max_confidence = queue[0].confidence
+        candidate = []
+        for n_c in queue:
+            if n_c.confidence == max_confidence:
+                candidate.append(Widget(n_c.node.attrib))
+        return candidate
 
     def static_match_activity(self, description):
         """
@@ -325,7 +327,7 @@ class Analyst:
         #     return self.static_match_activity_with_distance(description)
         widgets = self.graph.widgets()
         analyst_log.info(f'calculate similarity between "{description}" and static widget')
-        widgets = list(filter(lambda x: x['resource-id'] and 'Layout' not in x['class'], widgets))
+        widgets = list(filter(lambda x: 'Layout' not in x['class'], widgets))
         count = len(widgets)
         node_with_confidences = []
         for index, widget in enumerate(widgets):
