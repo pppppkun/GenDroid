@@ -63,9 +63,10 @@ class FSM:
             if self.__have_out_edge(src):
                 srcs = [src]
             else:
-                fsm_log.info(f'state {src.id} have not out edge. choose subset of it to find path')
+                fsm_log.info(f'state {src.id} have not out edge.')
                 # srcs = self.__find_state_subset(src)
-                srcs = self.__find_same_activity_state(src)
+                # srcs = self.__find_same_activity_state(src)
+                return [[]]
                 # 1. find the state with same activity
                 # 2. find path
                 # 3. filter path using first widget.

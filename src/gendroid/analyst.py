@@ -100,7 +100,7 @@ class Analyst:
         now_state, match = self.graph.get_most_closest_state(self.device.app_current_with_gui())
         return now_state.id == state.id
 
-    def calculate_path_between_activity(self, description, widget, resort_by_confidence=True):
+    def calculate_path_between_activity(self, description, widget, resort_by_confidence=True, event_expansion=True):
 
         paths = self.graph.find_path_to_target_widget(self.device, widget)
         candidate = []
@@ -131,7 +131,7 @@ class Analyst:
                 break
             analyst_log.info(f'valid {i}-th path')
             i += 1
-            events, scores = self.valid_path(path, description, widget)
+            events, scores = self.valid_path(path, description, widget, event_expansion)
             self.device.reset(cp)
             if scores is not None:
                 candidate.append([events, scores])
@@ -227,23 +227,24 @@ class Analyst:
             map(lambda x: self.confidence.confidence_with_node(x, description, self.use_position).confidence, cluster))
         return cluster, scores
 
-    def valid_path(self, path, description, w_target: dict):
+    def valid_path(self, path, description, w_target: dict, event_expansion):
         try:
             events = []
             scores = []
             will_or_have_execute_event_selector = [event_data.selector for event_data in path if event_data.selector]
             for index, event_data in enumerate(path):
-                ns, ss = self.event_expansion(description, None)
-                es = list(
-                    map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
-                                                                            data={'text': 'hello'}),
-                        ns
-                        ),
-                )
-                self.device.execute(es)
-                scores += ss
-                events += es
-                will_or_have_execute_event_selector += [e.selector for e in es]
+                if event_expansion:
+                    ns, ss = self.event_expansion(description, None)
+                    es = list(
+                        map(lambda x: self.constructor.generate_event_from_node(x, action='set_text',
+                                                                                data={'text': 'hello'}),
+                            ns
+                            ),
+                    )
+                    self.device.execute(es)
+                    scores += ss
+                    events += es
+                    will_or_have_execute_event_selector += [e.selector for e in es]
                 selector = event_data.selector
                 action = event_data.action
                 if action in KEY_EVENTS:

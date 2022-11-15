@@ -41,7 +41,8 @@ PLACE_HOLDER = '@'
 resource_id_pattern = re.compile(r'.*:id/(.*)')
 NodeWithConfidence = namedtuple('NodeWithConfidence', ['node', 'confidence'])
 model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/output_model')
-# model = SentenceTransformer('all-MiniLM-L6-v2')
+# model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/all-MiniLM-L6-v2')
+# model = SentenceTransformer('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/base_model')
 # decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/rf.joblib')
 decision_model = load('/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/decision/classifier_lack.joblib')
 

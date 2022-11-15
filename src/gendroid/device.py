@@ -108,6 +108,11 @@ class Device:
         if pre_state != post_state:
             # self.reset(len(self.history))
             self.history.append(e)
+            self.graph.add_edge(
+                pre_info,
+                post_info,
+                e
+            )
             return True
         return False
 

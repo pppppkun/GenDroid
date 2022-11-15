@@ -66,7 +66,7 @@ class Executor:
                 if len(tgt_widgets) != 0:
                     tgt_widget = tgt_widgets[0]
                     # for tgt_widget in tgt_widgets:
-                    path = self.analyst.calculate_path_between_activity(src_des, tgt_widget, resort_by_confidence=False)
+                    path = self.analyst.calculate_path_between_activity(src_des, tgt_widget, resort_by_confidence=False, event_expansion=False)
                     if path is not None:
                         events = path[0]
                         executor_log.info('find path to first description')
@@ -85,7 +85,7 @@ class Executor:
                 i += 1
                 if i == 5:
                     break
-                path = self.analyst.calculate_path_between_activity(src_des, tgt_widget)
+                path = self.analyst.calculate_path_between_activity(tgt_des, tgt_widget)
                 if path is not None:
                     found_path = True
                     executor_log.info(f'find valid {len(path[0])} paths')
