@@ -27,36 +27,44 @@ class bcolors:
 
 
 benchmark = '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark'
-ablation = '/Users/pkun/PycharmProjects/ui_api_automated_test/ablation'
 # apps = ['chrome', 'contact', 'gmail', 'photo', 'setting', 'clock']
 apps = list(filter(lambda x: os.path.isdir(os.path.join(benchmark, x)), os.listdir(benchmark)))
-TIME = re.compile(r'\d+-\d+-(\d+) (\d+):(\d+):\d+')
+apps.remove('.git')
+TIME = re.compile(r'\d+-\d+-(\d+) (\d+):(\d+):(\d+)')
 STATEMENT = re.compile(r'd\(.*\).*')
 SCREENSHOT = re.compile(r'screenshot is (\d+.png)')
 MATCH_WIDGET = re.compile(r'executor - INFO - match widget ')
 DESCRIPTION = re.compile('generating event for "(.*)"')
-format_time = namedtuple('format_time', ['day', 'hour', 'minute'])
-data_header = ['app', 'filename', 'time', 'events']
+format_time = namedtuple('format_time', ['day', 'hour', 'minute', 'second'])
+# data_header = ['app', 'filename', 'time', 'events']
+# data_header = ['filename', 'dynamic_time', 'hybrid_time']
 time_dst_file = 'data_with_time.csv'
 event_dst_file = 'data_with_events.csv'
 dynamic_match_file = 'static_dm.json'
 exceptions_log = []
 
 
-def write_csv(rows, dst_file):
+def get_data_path(dataset, app):
+    return os.path.join(benchmark, app, dataset)
+
+
+def write_csv(rows, dst_file, data_header):
     with open(dst_file, 'w') as f:
-        f_csv = csv.DictWriter(f, data_header)
-        f_csv.writeheader()
+        f_csv = csv.writer(f)
+        f_csv.writerow(data_header)
         f_csv.writerows(rows)
 
 
 def get_app_and_filename(filepath: str):
-    app = None
-    for app in apps:
-        if app in filepath:
-            break
-    rmost = filepath.rfind('/')
-    filename = filepath[rmost:]
+    # app = None
+    # for app in apps:
+    #     if app in filepath:
+    #         break
+    items = filepath.split('/')
+    app = items[-3]
+    filename = items[-1]
+    # rmost = filepath.rfind('/')
+    # filename = filepath[rmost + 1:]
     return app, filename
 
 
@@ -74,7 +82,7 @@ def to_format_row(data: dict):
 
 def iterator_log(dataset):
     for app in apps:
-        d = os.path.join(dataset, app)
+        d = get_data_path(dataset, app)
         for filename in os.listdir(d):
             if filename.endswith('.log'):
                 filepath = os.path.join(d, filename)
@@ -85,9 +93,9 @@ def iterator_log(dataset):
 
 def iterator_test(dataset):
     for app in apps:
-        d = os.path.join(dataset, app)
+        d = get_data_path(dataset, app)
         for filename in os.listdir(d):
-            if filename.endswith('.py') and (filename.startswith('test_') or filename.startswith('Itest')):
+            if filename.endswith('.py'):
                 filepath = os.path.join(d, filename)
                 test_item = filepath[:-3]
                 test = open(filepath).read().strip().split('\n')
@@ -98,7 +106,7 @@ def get_time(line):
     m = TIME.match(line)
     time = None
     if m:
-        time = format_time(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        time = format_time(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(int(m.group(4))))
     return time
 
 
@@ -109,10 +117,11 @@ def calculate_time(log):
     if start_time and end_time:
         if start_time.day == end_time.day:
             if end_time.hour == start_time.hour:
-                time = end_time.minute - start_time.minute
+                time = (end_time.minute - start_time.minute) * 60 + end_time.second - start_time.second
             else:
                 if end_time.hour - start_time.hour < 2:
                     time = (end_time.hour - start_time.hour) * 60 + end_time.minute - start_time.minute
+                    time = time * 60 + end_time.second - start_time.second
 
     return time
 
@@ -123,8 +132,9 @@ def analysis_time(dataset):
         time = calculate_time(log)
         if time == -1:
             exceptions_log.append(item)
-        result[item] = {'time': time}
-    print('\n'.join(exceptions_log))
+        app, filename = get_app_and_filename(item)
+        result[app + '/' + filename] = {dataset + '_time': time}
+    # print('\n'.join(exceptions_log))
     return result
 
 
@@ -132,6 +142,9 @@ def get_events(test: list):
     ntest = []
     i = 4
     while i != len(test):
+        if test[i].startswith('#'):
+            i += 1
+            continue
         if 'com.google.android.inputmethod.latin' in test[i]:
             i += 2
             continue
@@ -140,17 +153,18 @@ def get_events(test: list):
             continue
         ntest.append(test[i])
         i += 1
-    return ntest
+    return len(ntest)
 
 
 def analysis_events(dataset):
     result = dict()
     for item, test in iterator_test(dataset):
         events = get_events(test)
-        if len(events) == 0:
+        if events == 0:
             exceptions_log.append(item)
-        result[item] = {'events': len(events)}
-    print('\n'.join(exceptions_log))
+        app, filename = get_app_and_filename(item)
+        result[app + '/' + filename] = {dataset + '_event': events}
+    # print('\n'.join(exceptions_log))
     return result
 
 
@@ -249,21 +263,66 @@ def read_csv(filename):
             yield Row(*r)
 
 
+def get_covered_description():
+    rows = list(read_csv('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/data.csv'))
+    d = {}
+    for row in rows:
+        if row.app not in d:
+            d[row.app] = {}
+        d[row.app]['dynamic'] = int(row.dynamic)
+        d[row.app]['hybrid'] = int(row.hybrid)
+    return d
+
+
+def boxplot():
+    d = open('data_with_time.csv')
+    data = csv.DictReader(d)
+    from matplotlib import pyplot as plt
+    df = [[], []]
+    for row in data:
+        df[0].append(float(row['dynamic_time']))
+        df[1].append(float(row['hybrid_time']))
+    # plt.tick_params(axis='x', labelsize=8)
+    # fig = plt.figure(figsize=(4, 5))
+    plt.boxplot(df, showmeans=True, showfliers=False, manage_ticks=True)
+    plt.show()
+    # for app in df:
+    #     time = df[app]
+
+
+def fun():
+    hybrid_time = analysis_time('hybrid')
+    dynamic_time = analysis_time('dynamic')
+    covered_description = get_covered_description()
+    print(exceptions_log)
+    d = {}
+    for k in hybrid_time:
+        hybrid_time[k].update(dynamic_time[k])
+        # hybrid_time[k].update(hybrid_event[k])
+        # hybrid_time[k].update(dynamic_event[k])
+    # rows = list(map(lambda x: (x, round(hybrid_time[x]['dynamic_time'] / hybrid_time[x]['dynamic_event'], 1),
+    #                            round(hybrid_time[x]['hybrid_time'] / hybrid_time[x]['hybrid_event'], 1)), hybrid_time))
+    rows = list(map(lambda x: (x, hybrid_time[x]['dynamic_time'], hybrid_time[x]['hybrid_time']), hybrid_time))
+    write_csv(rows, time_dst_file, ['filename', 'dynamic_time', 'hybrid_time'])
+    # total = sum(rows[2])
+
+
 if __name__ == '__main__':
-    time_result = analysis_time(ablation)
-    # rows = to_format_row(result)
-    # write_csv(rows, time_dst_file)
-    event_result = analysis_events(ablation)
-    result = {}
-    for file in time_result.keys():
-        time = time_result[file]
-        event = event_result[file]
-        r = {}
-        r.update(time)
-        r.update(event)
-        result[file] = r
-    rows = to_format_row(result)
-    write_csv(rows, 'ablation_record.csv')
+    boxplot()
+    # fun()
+    # d = {}
+    # for k in result1:
+    #     app, _ = k.split('/')
+    #     d.setdefault(app, {'sum': 0})
+    #     d[app]['sum'] += result1[k]['hybrid_time']
+    # d[app]['count'] += 1
+    # for k in d:
+    # descriptions = int(input(k))
+    # print(k, d[k]['sum']/descriptions)
+    # print(sum(map(lambda x: d[x]['sum'], d)))
+    # for k in result1:
+    #     result1[k].update(result2[k])
+
     # manual_mark_dm()
     # dm = json.load(open(dynamic_match_file))
     # T = 0

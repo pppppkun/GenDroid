@@ -13,8 +13,6 @@ from nltk.corpus import stopwords
 from gendroid.confidence import get_most_important_attribute, predict_use_sbert
 import spacy
 
-nlp = spacy.load('en_core_web_trf')
-
 direction = [
     'top', 'bottom', 'upper', 'left', 'right'
 ]
@@ -178,6 +176,7 @@ class LocationType(enum.Enum):
     NULL_LOCATION = 0
     ABSOLUTE = 1
     RELATIVE = 2
+    UNRECOGNIZED = 3
 
 
 class GridLocation(enum.Enum):
@@ -201,7 +200,7 @@ class Location:
 
     down = ['bottom', 'under']
 
-    center = ['center', 'near']
+    center = ['center', 'near', 'in']
 
     map_ = {
         **{u: 1 for u in up},
@@ -286,7 +285,8 @@ def recognize_location_type(words):
 
 
 def event_and_positive_analysis(words):
-    doc = nlp(' '.join(words))
+    nlp = spacy.load('en_core_web_trf')
+    doc = nlp(words)
     action_word = []
     location_word = []
     for i in range(len(doc)):
@@ -297,63 +297,75 @@ def event_and_positive_analysis(words):
     if len(action_word) == 0:
         if 'tap' in words:
             action_word = [words.index('tap')]
+    assert len(action_word) != 0
     action_index = action_word[0]
-    if len(location_word) > 1:
+    if len(location_word) != 0:
         for index in location_word:
             if abs(action_index - index) <= 2:
                 location_word.remove(index)
-    location_index = location_word[0]
-    if action_index < location_index:
-        location = doc[location_index:]
-        event = doc[:location_index]
+    if len(location_word) != 0:
+        location_index = location_word[0]
+        if action_index < location_index:
+            location = doc[location_index:]
+            event = doc[:location_index]
+        else:
+            location = doc[:action_index]
+            event = doc[action_index:]
+        return event, location.text
     else:
-        location = doc[:action_index]
-        event = doc[action_index:]
-    return event.text, location.text
+        event = doc
+        return event, None
+    # return event.text, location.text
 
 
 def analysis_description(sentence):
-    # origin = '/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/origin_step_with_position.csv'
-    # nlp = spacy.load("en_core_web_trf")
-    # f = open(origin)
-    # f = csv.DictReader(f)
-    # for row in f:
-    # sentences = row['steps']
-    # if 'yes' != row['script']:
-    #     continue
-    # if '@' in sentences:
-    #     continue
-    # sentences = sentences.split('.')
-    # sentences = filter(lambda x: len(x) != 0, map(lambda x: x.strip(), sentences))
-    # sentences = list(sentences)
-    # for sent in sentences:
-    words = nltk.word_tokenize(sentence)
-    flag = False
-    if 'back' in words and words[words.index('back') + 1] == 'up':
-        words[words.index('back')] = 'backup'
-        words.pop(words.index('backup') + 1)
-        flag = True
-    location_type = recognize_location_type(words)
-    location = None
-    if location_type != LocationType.NULL_LOCATION:
-        try:
-            event, location = event_and_positive_analysis(words)
-        except BaseException:
-            return None, None
-        event = nltk.word_tokenize(event)
+    # words = nltk.word_tokenize(sentence)
+    # flag = False
+    # if 'back' in words and words[words.index('back') + 1] == 'up':
+    #     words[words.index('back')] = 'backup'
+    #     words.pop(words.index('backup') + 1)
+    #     flag = True
+
+    doc, location = event_and_positive_analysis(sentence)
+    if location == None:
+        location_type = LocationType.NULL_LOCATION
+        location = Location(location_type, location)
     else:
-        event = words
-    # event = stopwords.words('english')
-    event = list(filter(lambda x: x == 'more' or x not in stopwords.words('english'), event))
-    if flag:
-        index = event.index('backup')
-        event.insert(index + 1, 'up')
-        event[index] = 'back'
-    action = event[0]
-    ui_info = ' '.join(event[1:])
-    location = Location(location_type, location)
-    # print((action, ui_info, location.__str__()))
-    return action, ui_info
+        location = recognize_location_type(location)
+    event = str(doc.text)
+    if 'wi-fi' in event:
+        event = event.replace('wi-fi', 'wifi')
+    action, ui = pos_analysis(event)
+    return action, ui, location
+    # event = doc.text
+    # location_type = recognize_location_type(words)
+    # location = None
+    # if location_type != LocationType.NULL_LOCATION:
+    #     try:
+    #         event, location = event_and_positive_analysis(words)
+    #     except BaseException:
+    #         return None, None
+    #     event = nltk.word_tokenize(event)
+    # else:
+    #     event = words
+    # # event = stopwords.words('english')
+    # event = list(filter(lambda x: x == 'more' or x not in stopwords.words('english'), event))
+    # if flag:
+    #     index = event.index('backup')
+    #     event.insert(index + 1, 'up')
+    #     event[index] = 'back'
+    # if '@' in event:
+    #     index = event.index('@')
+    #     pre = event[index - 1]
+    #     post = event[index + 1]
+    #     event[index - 1] = pre + '@' + post
+    #     event.pop(index)
+    #     event.pop(index)
+    # action = event[0]
+    # ui_info = ' '.join(event[1:])
+    # location = Location(location_type, location)
+    # # print((action, ui_info, location.__str__()))
+    # return action, ui_info, location
 
 
 def add_action_and_ui_info():
@@ -379,6 +391,9 @@ def process_resource_id(x): return resource_id_pattern.match(x).group(1).replace
 
 
 def pos_analysis(description):
+    if description.startswith('tap'):
+        return ['tap'], [description[description.index('tap') + 4:]]
+    nlp = spacy.load('en_core_web_sm')
     doc = nlp(description)
     actions = []
     for token in doc:
@@ -436,16 +451,18 @@ def add_similarity():
               indent=4)
 
 
+max_x = 1080
+max_y = 1920
+grids = [
+    [max_x / 3 * (i - 1),
+     max_y / 3 * (j - 1),
+     max_x / 3 * i,
+     max_y / 3 * j,
+     ] for j in range(1, 4) for i in range(1, 4)
+]
+
+
 def generate_absolute_bounds(index):
-    max_x = 1080
-    max_y = 1920
-    grids = [
-        [max_x / 3 * (i - 1),
-         max_y / 3 * (j - 1),
-         max_x / 3 * i,
-         max_y / 3 * j,
-         ] for j in range(1, 4) for i in range(1, 4)
-    ]
     grid = grids[index]
     x1, y1, x2, y2 = grid
     nx1, ny1 = random.randint(x1, x2), random.randint(y1, y2)
@@ -488,7 +505,7 @@ def add_false_sample():
                 false_widget['bounds'] = new_bounds
                 continue
             if true_widget['similarity'] > 0.9:
-                false_widget['similarity'] = true_widget['similarity'] + random.uniform(-0.2, -0.1)
+                false_widget['similarity'] = true_widget['similarity'] + random.uniform(-0.25, -0.1)
             else:
                 false_widget['similarity'] = true_widget['similarity'] + random.uniform(-0.1, 0.1)
             if location_type == 'absolute':
@@ -498,11 +515,29 @@ def add_false_sample():
                 false_widget['bounds'] = generate_absolute_bounds(get_grid_random_except_param(location.grid.value))
             if location_type == 'relative':
                 # different position but same similarity
-                relative_widget = data['relative widget']
                 location = Location(LocationType.RELATIVE, data['relative'])
                 data['relative int'] = location.grid
-                false_widget['bounds'] = generate_relative_bounds(get_grid_random_except_param(location.grid.value),
-                                                                  relative_widget['bounds'])
+    json.dump(d, open('/users/pkun/pycharmprojects/ui_api_automated_test/decision_data/data_with_action_ui.json', 'w'),
+              indent=4)
+
+
+def add_location_int():
+    d = json.load(open('/users/pkun/pycharmprojects/ui_api_automated_test/decision_data/data_with_action_ui.json'))
+    for index in d:
+        descriptions = d[index]
+        for desc in descriptions:
+            data = descriptions[desc]
+            location_type = data['location type']
+            if location_type == 'absolute':
+                # different position but same similarity
+                location = Location(LocationType.ABSOLUTE, data['absolute'])
+                data['grid int'] = location.grid.value
+            if location_type == 'relative':
+                # different position but same similarity
+                location = Location(LocationType.RELATIVE, data['relative'])
+                data['relative int'] = location.grid
+    json.dump(d, open('/users/pkun/pycharmprojects/ui_api_automated_test/decision_data/data_with_action_ui.json', 'w'),
+              indent=4)
 
 
 def check_confidence():
@@ -511,16 +546,181 @@ def check_confidence():
         descriptions = d[index]
         for desc in descriptions:
             data = descriptions[desc]
-            confidence = data['true widget']['similarity']
-            if confidence < 0.5:
+            if 'similarity' in data['true widget'] and 'similarity' in data['false widget']:
+                pass
+            else:
                 print(index, desc)
 
 
+def build_test_body(steps, app):
+    test_body = f"tester = Tester('.', '{app}', have_install=True)\n"
+    test_body += 'tester'
+    for i in range(len(steps)):
+        test_body += '.add_description(\n'
+        test_body += repr(steps[i]) + '\n)'
+    test_body += ".construct('test_' + os.path.basename(__file__))"
+    return test_body
+
+
+def origin_steps_to_script():
+    origin = '/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/origin_step_with_position.csv'
+    benchmark = '/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark'
+    f = open(origin, 'r')
+    g = csv.DictReader(f)
+    d = 0
+    test_head = 'import os\nfrom gendroid.api import Tester\n# {steps}\n'
+    total_script = 0
+    total_steps = 0
+    lacks = []
+    app = 'google'
+    for row in g:
+        if row['category'] == app:
+            # if row['script'] == 'yes' and row['category'] == 'gmail' and 'setting' not in row['steps']:
+            # print(row['steps'])
+            steps = row['steps'].split('.')
+            if 'com' in steps:
+                index = steps.index('com')
+                steps[index - 1] = steps[index - 1] + '.com'
+                steps.pop(index)
+            steps = list(map(lambda x: x.strip(), steps))
+            steps = list(filter(lambda x: len(x) != 0, steps))
+            # total_steps += len(steps)
+            # total_script += 1
+            app = row['category']
+            target_path = os.path.join(benchmark, app)
+            if not os.path.exists(target_path):
+                os.mkdir(target_path)
+            head = test_head.format(steps=row['steps'])
+            body = build_test_body(steps, app)
+            if row['script'] == 'yes':
+                total_steps += len(steps)
+                total_script += 1
+                f = app + str(d) + '.py'
+                f = os.path.join(target_path, f)
+                f = open(f, 'w')
+                f.write(head + body)
+                f.close()
+                d += 1
+            else:
+                if row['script'] == 'cant' and row['reason'] == 'Lack':
+                    total_steps += len(steps)
+                    total_script += 1
+                    lacks.append(head + body)
+
+            # print(head, body)
+    for code in lacks:
+        target_path = os.path.join(benchmark, app)
+        f = app + str(d) + '.py'
+        f = os.path.join(target_path, f)
+        f = open(f, 'w')
+        f.write(code)
+        f.close()
+        d += 1
+
+    print(total_script, total_steps, total_script + total_steps)
+
+
+def statistics():
+    origin = '/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/origin_step_with_position.csv'
+    f = open(origin, 'r')
+    f = csv.DictReader(f)
+    total_steps = 0
+    total_script = 0
+    count = 0
+    l = []
+    for row in f:
+        if row['script'] == 'yes':
+            # if row['category'] == 'gmail':
+            #     if 'setting' not in row['steps']:
+            # l.append(count)
+            # else:
+            l.append(count)
+        count += 1
+        # if row['category'] == 'gmail' and row['script'] == 'yes' and 'setting' not in row['steps']:
+        #     print(row['steps'])
+        # if row['script'] == 'yes' and row['category'] == 'gmail':
+        #     total_script += 1
+        #     steps = row['steps'].split('.')
+        #     steps = list(map(lambda x: x.strip(), steps))
+        #     steps = list(filter(lambda x: len(x) != 0, steps))
+        #     total_steps += len(steps)
+    # print(f'total script {total_script} total steps {total_steps}')
+    print(l, len(l))
+
+
+# [31, 41, 69, 83, 110, 143]
+def prevent_academic_misconduct():
+    origin = '/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/origin_step.txt'
+    origin = open(origin).read().split('\n')
+    new = '/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/origin_step_with_position.csv'
+    new = open(new, 'r')
+    new = csv.DictReader(new)
+    i = 0
+    need_to_fix = []
+    for row in new:
+        if row['script'] == 'yes':
+            print(f'{origin[i]}\n{row["steps"]}')
+            s = input()
+            if s == '1':
+                need_to_fix.append(i)
+        i += 1
+    print(need_to_fix)
+
+
+def analysis_description_test():
+    origin = '/Users/pkun/PycharmProjects/ui_api_automated_test/src/model/bert/origin_step_with_position.csv'
+    f = open(origin, 'r')
+    f = csv.DictReader(f)
+    from gendroid.confidence import Confidence
+    for row in f:
+        if row['script'] == 'yes' and row['category'] == 'chrome':
+            steps = row['steps'].split('.')
+            if 'com' in steps:
+                index = steps.index('com')
+                steps[index - 1] = steps[index - 1] + '.com'
+                steps.pop(index)
+            steps = list(map(lambda x: x.strip(), steps))
+            steps = list(filter(lambda x: len(x) != 0, steps))
+            for step in steps:
+                action, ui, location = Confidence.analysis_description(step)
+                # if location.location_type.value == LocationType.UNRECOGNIZED.value:
+                #     print(step)
+                print((step, action, ui, location.location_type))
+
+
+def make_boxplot_for_efficient():
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    data = pd.read_csv('data_with_time.csv')
+
+    # 读取数据
+    # datafile = u'D:\\pythondata\\learn\\matplotlib.xlsx'
+    # data = pd.read_excel(datafile)
+    # box_1, box_2, box_3, box_4 = data['收入_Jay'], data['收入_JJ'], data['收入_Jolin'], data['收入_Hannah']
+    #
+    # plt.figure(figsize=(10, 5))  # 设置画布的尺寸
+    # plt.title('Examples of boxplot', fontsize=20)  # 标题，并设定字号大小
+    # labels = 'Jay', 'JJ', 'Jolin', 'Hannah'  # 图例
+    # plt.boxplot([box_1, box_2, box_3, box_4], labels=labels)  # grid=False：代表不显示背景中的网格线
+    # data.boxplot()#画箱型图的另一种方法，参数较少，而且只接受dataframe，不常用
+    # plt.show()  # 显示图像
+
+
 if __name__ == '__main__':
+    # from gendroid.confidence import Confidence
+    # Confidence.analysis_description('under basics tap search engine')
     # analysis_position()
     # create_decision_data()
     # add_decision_data()
-    # print(analysis_position('click backup'))
+    # print(analysis_description('click uiapitest24@gmail.com'))
+    # event_and_positive_analysis('tap top right corner three dot'.split(' '))
     # add_similarity()
-    add_false_sample()
+    # add_false_sample()
+    # add_location_int()
     # check_confidence()
+    origin_steps_to_script()
+    # statistics()
+    # analysis_description_test()
+    # event_and_positive_analysis(['tap', 'back', 'up', '&', 'sync'])
+    # prevent_academic_misconduct()
