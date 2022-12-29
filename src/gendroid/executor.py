@@ -19,6 +19,7 @@ class ExecutorMode(Enum):
     STATIC = 0
     DYNAMIC = 1
     HYBRID = 2
+    INTERACTIVE = 3
 
 
 class Executor:
@@ -29,6 +30,19 @@ class Executor:
         self.descriptions = None
         self.mode = mode
         pass
+
+    def interactive(self):
+        while True:
+            command = input()
+            if command == 'q':
+                break
+            else:
+                description, data = command.split(',')
+                description = description.strip()
+                data = data.strip()
+                src_widgets = self.analyst.dynamic_match_widget(description)
+                for widget in src_widgets:
+                    print(widget)
 
     # 1. get widget dynamic and static.
     # 2. calculate similarity between source and d and get widget w1
@@ -66,7 +80,8 @@ class Executor:
                 if len(tgt_widgets) != 0:
                     tgt_widget = tgt_widgets[0]
                     # for tgt_widget in tgt_widgets:
-                    path = self.analyst.calculate_path_between_activity(src_des, tgt_widget, resort_by_confidence=False, event_expansion=False)
+                    path = self.analyst.calculate_path_between_activity(src_des, tgt_widget, resort_by_confidence=False,
+                                                                        event_expansion=False)
                     if path is not None:
                         events = path[0]
                         executor_log.info('find path to first description')
@@ -151,4 +166,5 @@ d.app_start('{}', use_monkey=True)
 
 if __name__ == '__main__':
     # print(ExecutorMode['DYNAMIC'] == ExecutorMode.DYNAMIC)
-    print(ExecutorMode(1))
+    a, b = input().split(',')
+    print(a, b)

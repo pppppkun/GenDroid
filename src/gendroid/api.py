@@ -129,6 +129,33 @@ class Tester:
         exit(0)
 
 
+class InteractiveTester:
+    def __init__(self, apk_folder, app_name):
+        self.timer = None
+        set_app(apk_folder, app_name)
+        from gendroid.device import Device
+        from gendroid.executor import Executor
+        from gendroid.db import DataBase
+        from gendroid.analyst import Analyst
+        from gendroid.FSM import FSM
+        from gendroid.construct import Constructor
+        from gendroid.confidence import Confidence
+
+        self.__graph = FSM(graph_folder=os.path.join(apk_folder, 'output'))
+        self.__device = Device(os.path.join(apk_folder, app_name + '.apk'), self.__graph, have_install=True)
+        self.__db = DataBase(decompile_folder=os.path.join(apk_folder, 'decompile'),
+                             atm_folder=os.path.join(apk_folder, 'out'), package=self.__device.package)
+        self.__confidence = Confidence()
+        self.__analyst = Analyst(device=self.__device, graph=self.__graph, data_base=self.__db,
+                                 confidence=self.__confidence, use_position=True)
+        self.__constructor = Constructor(db=self.__db)
+        self.__executor = Executor(device=self.__device, analyst=self.__analyst, constructor=self.__constructor,
+                                   mode=ExecutorMode['INTERACTIVE'])
+        self.__descriptions = []
+
+    def start(self):
+        self.__executor.interactive()
+
 def execute_script(path):
     if type(path) != list:
         path = [path]
@@ -168,6 +195,6 @@ def run_test(filepath, target_folder, mode, device='emulator-5554'):
     if not os.path.exists(os.path.join(target_folder, target)):
         subprocess.call(["python3", filepath, '--output', target_folder, '--mode', mode, '--device', device])
 
-
 if __name__ == '__main__':
-    execute_script('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/chrome')
+    pass
+    # execute_script('/Users/pkun/PycharmProjects/ui_api_automated_test/benchmark/chrome')

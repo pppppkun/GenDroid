@@ -191,7 +191,20 @@ class FSM:
         tgt_state, _ = self.get_most_closest_state(tgt)
         if tgt_state is None or _ < 0.2:
             tgt_state = self.add_node(tgt)
-        # if self.__find_path_between_state(src_state, tgt_state):
+        # src_state = self.create_state(src)
+        # tgt_state = self.create_state(tgt)
+        #
+        # def get_or_add_state(state):
+        #     if state.id in self.states:
+        #         return self.states[state.id]
+        #     else:
+        #         self.states[state.id] = state
+        #         self.g.add_node(state.id)
+        #         return state
+        #
+        # src_state = get_or_add_state(src_state)
+        # tgt_state = get_or_add_state(tgt_state)
+
         if self.__have_path_between_state(src_state, tgt_state):
             return
         fsm_log.info(f'add edge between {src_state.id} {tgt_state.id} {event.event_str()}')
@@ -264,6 +277,7 @@ class FSM:
             else:
                 if root.get('package') == package:
                     views.append(root.attrib)
+
         # for view in root.iter():
         # if view.get('package') == package:
         # views.append(view.attrib)
@@ -286,6 +300,9 @@ class FSM:
 
     # Have tested
     def get_most_closest_state(self, app_info):
+        new_state = self.create_state(app_info)
+        if new_state.id in self.states:
+            return self.states[new_state.id], 100
         views = self.get_all_leaf_node(app_info['gui'], app_info['package'])
         if app_info['package'] in app_info['activity']:
             activity = app_info['activity'][:len(app_info['package'])] + '/' + \
